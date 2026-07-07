@@ -5,10 +5,11 @@ import { AuthContext, AuthProvider } from './context/AuthContext.jsx';
 import { ThemeContextProvider } from './context/ThemeContext.jsx'; // <-- New
 import Login from './components/Login.jsx';
 import Setup from './components/Setup.jsx';
-import Layout from './components/Layout.jsx'; // <-- New
+import Layout from './components/Layout.jsx';
+import Home from './components/Home.jsx';
 
 // Placeholder Pages (We will build these out next!)
-const Home = () => <Typography variant="h4">Script Execution (Main Page)</Typography>;
+// const Home = () => <Typography variant="h4">Script Execution (Main Page)</Typography>;
 const History = () => <Typography variant="h4">Recent History Page</Typography>;
 const Settings = () => <Typography variant="h4">Settings & API Keys</Typography>;
 
