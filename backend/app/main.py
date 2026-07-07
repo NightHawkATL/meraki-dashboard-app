@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from . import models
-from .routes import auth   # <--- IMPORT THE NEW ROUTER
+from .routes import auth, meraki
 
 # Create all tables in PostgreSQL
 Base.metadata.create_all(bind=engine)
@@ -19,6 +19,7 @@ app.add_middleware(
 
 # <--- TELL FASTAPI TO USE THE ROUTER
 app.include_router(auth.router)
+app.include_router(meraki.router)
 
 @app.get("/")
 def health_check():
