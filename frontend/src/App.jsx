@@ -1,26 +1,26 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Container, Typography, Box, Button, CircularProgress } from '@mui/material';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import { AuthContext, AuthProvider } from './context/AuthContext.jsx';
+import { ThemeContextProvider } from './context/ThemeContext.jsx'; // <-- New
 import Login from './components/Login.jsx';
-import Setup from './components/Setup.jsx'; // Import the new setup screen
+import Setup from './components/Setup.jsx';
+import Layout from './components/Layout.jsx'; // <-- New
 
-const Dashboard = () => {
-  const { logout } = useContext(AuthContext);
-  return (
-    <Container maxWidth="md">
-      <Box sx={{ mt: 10, textAlign: 'center' }}>
-        <Typography variant="h3" gutterBottom color="primary">Welcome to the Dashboard!</Typography>
-        <Button variant="outlined" color="error" onClick={logout}>Log Out</Button>
-      </Box>
-    </Container>
-  );
+// Placeholder Pages (We will build these out next!)
+const Home = () => <Typography variant="h4">Script Execution (Main Page)</Typography>;
+const History = () => <Typography variant="h4">Recent History Page</Typography>;
+const Settings = () => <Typography variant="h4">Settings & API Keys</Typography>;
+
+const ProtectedRoute = ({ children }) => {
+  const { token } = useContext(AuthContext);
+  return token ? children : <Navigate to="/login" />;
 };
 
 const AppContent = () => {
   const { token } = useContext(AuthContext);
   const [adminExists, setAdminExists] = useState(null);
 
-  // Check if the database has an admin user yet
   const checkStatus = async () => {
     try {
       const res = await fetch('/api/auth/status');
@@ -31,29 +31,38 @@ const AppContent = () => {
     }
   };
 
-  useEffect(() => {
-    checkStatus();
-  }, []);
+  useEffect(() => { checkStatus(); }, []);
 
-  // Show a loading spinner while we check the database
   if (adminExists === null) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 20 }}><CircularProgress /></Box>;
   }
 
-  // If no admin exists, show the Setup screen
-  if (!adminExists) {
-    return <Setup onSetupComplete={checkStatus} />;
-  }
+  // Define our URL Rules!
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/setup" element={!adminExists ? <Setup onSetupComplete={checkStatus} /> : <Navigate to="/login" />} />
+      <Route path="/login" element={!token ? (!adminExists ? <Navigate to="/setup" /> : <Login />) : <Navigate to="/" />} />
 
-  // Otherwise, run the normal Login/Dashboard flow
-  return token ? <Dashboard /> : <Login />;
+      {/* Private Routes (Wrapped in the Layout we just built) */}
+      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route index element={<Home />} />
+        <Route path="history" element={<History />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
+    </Routes>
+  );
 };
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <ThemeContextProvider>
+          <AppContent />
+        </ThemeContextProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
