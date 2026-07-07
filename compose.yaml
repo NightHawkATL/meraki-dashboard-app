@@ -1,0 +1,83 @@
+services:
+  # 1. PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: meraki_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-securepassword123}
+      POSTGRES_DB: ${DB_NAME:-merakidb}
+    volumes:
+      - /mnt/Apps/Storage/meraki_app/postgres_data:/var/lib/postgresql/data    # <---  Set to any bind-mounted location (only change the left side of the ":" (colon) 
+    networks:
+      - app_network
+
+  # 2. Redis (Message Broker for Celery WebSockets)
+  redis:
+    image: redis:7-alpine
+    container_name: meraki_redis
+    restart: always
+    networks:
+      - app_network
+
+  # 3. FastAPI Backend
+  backend:
+    build: ./backend
+    container_name: meraki_fastapi
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-admin}:${DB_PASSWORD:-securepassword123}@db:5432/${DB_NAME:-merakidb}
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-supersecretjwtkey} # For JWT
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}            # For Fernet (Meraki API Keys)
+    ports:
+      - "8000:8000"
+    volumes:
+      # - ./backend:/app                # Live code editing
+      - /mnt/Apps/Storage/meraki_app/script_storage:/app/storage   # Stores the xlsx/txt output files  # <---  Set to any bind-mounted location (only change the left side of the ":" (colon)
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app_network
+
+  # 4. Celery Worker (Runs the Python Scripts in the background)
+  celery_worker:
+    build: ./backend
+    container_name: meraki_celery
+    restart: always
+    command: celery -A app.tasks worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-admin}:${DB_PASSWORD:-securepassword123}@db:5432/${DB_NAME:-merakidb}
+      - REDIS_URL=redis://redis:6379/0
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    volumes:
+      # - ./backend:/app
+      - /mnt/Apps/Storage/meraki_app/script_storage:/app/storage    # <---  Set to any bind-mounted location (only change the left side of the ":" (colon)
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app_network
+
+  # 5. React Frontend
+  frontend:
+    build: ./frontend
+    container_name: meraki_react
+    restart: always
+    ports:
+      - "3000:80" # Nginx serves React on port 3000 to the outside
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+# volumes:
+#   postgres_data:
+#   script_storage:
+
+networks:
+  app_network:
+    driver: bridge
