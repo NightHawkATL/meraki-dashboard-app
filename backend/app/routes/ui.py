@@ -70,15 +70,22 @@ def render_settings(request: Request, db: Session = Depends(get_db), current_use
 
 @router.get("/history")
 def render_history(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    """Renders the Recent History page."""
-    
-    # Admins see everything. Standard users see only their own jobs.
     if current_user.is_admin:
         jobs = db.query(models.JobHistory).order_by(models.JobHistory.id.desc()).all()
     else:
         jobs = db.query(models.JobHistory).filter(models.JobHistory.user_id == current_user.id).order_by(models.JobHistory.id.desc()).all()
 
+    has_running_jobs = any(job.status in ["Pending", "Running"] for job in jobs)
+    
+    # Grab the cache to map network IDs to Network Names!
+    cache = db.query(models.MerakiNetworkCache).all()
+    network_names = {item.network_id: item.network_name for item in cache}
+
     return templates.TemplateResponse(
         "history.html", 
-        {"request": request, "current_user": current_user, "jobs": jobs}
+        {
+            "request": request, "current_user": current_user, 
+            "jobs": jobs, "has_running_jobs": has_running_jobs,
+            "network_names": network_names # <--- Pass it to HTML
+        }
     )
