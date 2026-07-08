@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Meraki Dashboard App</title>
+    <!-- Pico.css for beautiful, zero-config styling -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <!-- HTMX for dynamic interactions without writing Javascript -->
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+        body { padding-top: 3rem; }
+        .centered-container { max-width: 500px; margin: 0 auto; margin-top: 5rem; }
+    </style>
+</head>
+<body>
+    <main class="container" id="main-content">
+        <!-- This is where all other pages will inject their content -->
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
