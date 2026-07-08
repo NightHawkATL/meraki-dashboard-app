@@ -66,7 +66,7 @@ def render_settings(request: Request, db: Session = Depends(get_db), current_use
             "request": request, 
             "current_user": current_user,
             "orgs": list(unique_orgs.values()),
-            "networks": cache
+            "networks": cache,
             "mapbox_key": mapbox_key
         }
     )
