@@ -1,6 +1,5 @@
-from fastapi import HTTPException
-from fastapi import APIRouter, Depends, Form, Response
-from fastapi.responses import HTMLResponse # <--- NEW IMPORT
+from fastapi import APIRouter, Depends, Form, Response, HTTPException
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 import meraki
 from .. import models, security, deps
@@ -8,7 +7,6 @@ from ..database import get_db
 
 router = APIRouter(prefix="/api/meraki", tags=["Meraki Integration"])
 
-# Notice we added response_class=HTMLResponse here!
 @router.post("/key", response_class=HTMLResponse)
 def save_api_key(
     api_key: str = Form(...), 
@@ -16,12 +14,9 @@ def save_api_key(
     current_user: models.User = Depends(deps.get_current_user)
 ):
     """Encrypts and saves the Meraki API key to the user's profile."""
-    # Aggressively clean the key (removes spaces, newlines, and accidental quotes)
     clean_key = api_key.strip().strip('"').strip("'")
-    
     current_user.meraki_api_key_encrypted = security.encrypt_api_key(clean_key)
     db.commit()
-    
     return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>API key saved securely.</article>"
 
 @router.post("/sync", response_class=HTMLResponse)
@@ -60,6 +55,9 @@ def sync_meraki_data(
         
         response.headers["HX-Refresh"] = "true"
         return ""
+    
+    except Exception as e:
+        return f"<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>Sync Error: {str(e)}</article>"
 
 @router.get("/network/{network_id}/location")
 def get_network_location(
@@ -67,7 +65,7 @@ def get_network_location(
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(deps.get_current_user)
 ):
-    # Fetches the physical address and coordinates of devices in a specific network.
+    """Fetches the physical address and coordinates of devices in a specific network."""
     if not current_user.meraki_api_key_encrypted:
         raise HTTPException(status_code=400, detail="No API key found.")
     
@@ -75,11 +73,8 @@ def get_network_location(
     
     try:
         dashboard = meraki.DashboardAPI(api_key=api_key, print_console=False, suppress_logging=True)
-        
-        # Pull all devices registered to this network
         devices = dashboard.networks.getNetworkDevices(network_id)
         
-        # Scan devices for one that has location data populated
         for dev in devices:
             if dev.get('address') or (dev.get('lat') and dev.get('lng')):
                 return {
@@ -94,6 +89,3 @@ def get_network_location(
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
-    except Exception as e:
-        return f"<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>Sync Error: {str(e)}</article>"
