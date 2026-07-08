@@ -109,7 +109,7 @@
     const boxOrg = document.getElementById('box-org');
     const boxNet = document.getElementById('box-net');
     
-    function checkCascading(orgChanged = false) {
+    async function checkCascading(orgChanged = false) {
         // 1. Script Selected?
         if (scriptSel.value) {
             boxScript.style.borderTop = '4px solid #4caf50';
@@ -124,7 +124,6 @@
             netSel.disabled = false; boxNet.style.opacity = '1';
             if (orgChanged) {
                 netSel.value = ""; // Reset network dropdown
-                // Show only networks in this org
                 document.querySelectorAll('.net-opt').forEach(opt => {
                     opt.style.display = opt.classList.contains('org-' + orgSel.value) ? 'block' : 'none';
                 });
@@ -133,16 +132,37 @@
             netSel.disabled = true; boxNet.style.opacity = '0.5';
         }
 
-        // 3. All 3 Selected? Show Verification & Site Info!
+        // 3. All 3 Selected? Show Verification & Fetch Real Site Info!
         if (scriptSel.value && orgSel.value && netSel.value) {
             document.getElementById('verifyScript').textContent = scriptSel.options[scriptSel.selectedIndex].text;
             document.getElementById('verifyNet').textContent = netSel.options[netSel.selectedIndex].text;
             document.getElementById('verifyPanel').style.display = 'block';
             
-            // Show fake hotel data
-            document.getElementById('siteInfoName').textContent = "Holiday Inn Express - " + netSel.options[netSel.selectedIndex].text.split(' - ')[0];
+            // Set the Name and show loading text
+            document.getElementById('siteInfoName').textContent = netSel.options[netSel.selectedIndex].text;
+            const addressSpan = document.getElementById('siteAddress');
+            addressSpan.textContent = "Fetching location from Meraki...";
+            
             document.getElementById('siteInfoContent').style.display = 'block';
             document.getElementById('siteInfoPlaceholder').style.display = 'none';
+
+            // --- NEW: Fetch Real Location Data from Backend ---
+            try {
+                const response = await fetch(`/api/meraki/network/${netSel.value}/location`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Update UI with real Meraki address!
+                    addressSpan.textContent = data.address;
+                    console.log(`Found Coordinates: Lat ${data.lat}, Lng ${data.lng}`);
+                    // (We will pass lat/lng to Mapbox here later!)
+                } else {
+                    addressSpan.textContent = "No address configured in Meraki dashboard.";
+                }
+            } catch (err) {
+                addressSpan.textContent = "Failed to fetch location.";
+            }
+
         } else {
             document.getElementById('verifyPanel').style.display = 'none';
             document.getElementById('siteInfoContent').style.display = 'none';
