@@ -12,17 +12,24 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
+    // Package the credentials as Form Data instead of JSON
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        headers: { 
+          'Content-Type': 'application/x-www-form-urlencoded' 
+        },
+        body: formData, // Send the formData object here
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        login(data.access_token); // Save the JWT token!
+        login(data.access_token);
       } else {
         setError(data.detail || 'Failed to log in');
       }
