@@ -2,53 +2,45 @@
 
 {% block app_content %}
 <hgroup style="margin-bottom: 24px;">
-    <h2 style="margin-bottom: 4px;">Recent History</h2>
-    <p style="color: #aaa; font-size: 0.9rem;">View logs and outputs from your executed scripts.</p>
+    <h2 style="margin-bottom: 4px;">Audit History</h2>
+    <p style="color: #aaa; font-size: 0.9rem;">
+        {% if current_user.is_admin %}Global log of all scripts run by all users.{% else %}History of scripts you have run.{% endif %}
+    </p>
 </hgroup>
 
-<!-- HTMX Magic: If there are running jobs, poll this URL every 2 seconds and swap the table cleanly! -->
-<div id="job-table-container" 
-    {% if has_running_jobs %} hx-get="/history" hx-trigger="every 2s" hx-select="#job-table-container" hx-swap="outerHTML" {% endif %}>
-    
-    {% for job in jobs %}
-    <div class="mui-paper" style="margin-bottom: 16px; border-left: 4px solid {% if job.status == 'Success' %}#4caf50{% elif job.status == 'Failed' %}#f44336{% else %}#ffeb3b{% endif %};">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-            <div>
-                <strong style="color: #fff; font-size: 1.1rem;">{{ job.script_name }}</strong>
-                <span style="color: #888; font-size: 0.85rem; margin-left: 8px;">Job #{{ job.id }}</span>
-                <div style="color: #aaa; font-size: 0.85rem; margin-top: 4px;">
-                    <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">lan</span> {{ job.target_network_id }}
-                </div>
-            </div>
-            <div style="text-align: right;">
-                <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;
-                    background: {% if job.status == 'Success' %}rgba(76, 175, 80, 0.2); color: #4caf50;
-                                {% elif job.status == 'Failed' %}rgba(244, 67, 54, 0.2); color: #f44336;
-                                {% else %}rgba(255, 235, 59, 0.2); color: #ffeb3b;{% endif %}">
-                    {{ job.status }}
-                </span>
-                <div style="color: #888; font-size: 0.8rem; margin-top: 4px;">{{ job.timestamp.strftime('%Y-%m-%d %H:%M') }}</div>
-            </div>
-        </div>
-
-        <!-- Progress Logs Terminal -->
-        <div style="background: #0a0a0a; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #00ff00; max-height: 150px; overflow-y: auto;">
-            {% for log in job.progress_log %}
-                <div style="margin-bottom: 4px; color: {% if log.status == 'error' %}#f44336{% elif log.status == 'success' %}#4caf50{% else %}#00ff00{% endif %};">
-                    > {{ log.step }}
-                </div>
+<div class="mui-paper" style="padding: 0; overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+        <thead>
+            <tr style="background: #1e1e1e; border-bottom: 1px solid #333;">
+                <th style="padding: 16px; color: #888;">Date & Time</th>
+                <th style="padding: 16px; color: #888;">User</th>
+                <th style="padding: 16px; color: #888;">Script Name</th>
+                <th style="padding: 16px; color: #888;">Target Network</th>
+                <th style="padding: 16px; color: #888;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in jobs %}
+            <tr style="border-bottom: 1px solid #222; transition: 0.2s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 16px; color: #aaa;">{{ job.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td style="padding: 16px; color: #e0e0e0;">{{ job.owner.username.split('@')[0] }}</td>
+                <td style="padding: 16px; color: #1976d2; font-weight: 500;">{{ job.script_name }}</td>
+                <td style="padding: 16px; color: #aaa;">{{ job.target_network_id }}</td>
+                <td style="padding: 16px;">
+                    <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;
+                        background: {% if job.status == 'Success' %}rgba(76, 175, 80, 0.2); color: #4caf50;
+                                    {% elif job.status == 'Failed' %}rgba(244, 67, 54, 0.2); color: #f44336;
+                                    {% else %}rgba(255, 235, 59, 0.2); color: #ffeb3b;{% endif %}">
+                        {{ job.status }}
+                    </span>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="padding: 24px; text-align: center; color: #888;">No execution history found.</td>
+            </tr>
             {% endfor %}
-            {% if job.status in ['Pending', 'Running'] %}
-                <div style="animation: pulse 1.5s infinite;">> _</div>
-            {% endif %}
-        </div>
-    </div>
-    {% else %}
-    <p style="color: #888;">No scripts have been executed yet.</p>
-    {% endfor %}
+        </tbody>
+    </table>
 </div>
-
-<style>
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-</style>
 {% endblock %}
