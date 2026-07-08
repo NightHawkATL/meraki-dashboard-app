@@ -97,10 +97,9 @@
     
     <!-- RIGHT: Mapbox Integration -->
     <div class="mui-paper" style="display: flex; align-items: center; justify-content: center; min-height: 300px; background: #0a0a0a; padding: 0; overflow: hidden; position: relative;">
-        <!-- The actual map will render inside this div -->
-        <div id="map" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: none;"></div>
+        <!-- Map is always "rendered", just invisible! -->
+        <div id="map" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none; transition: opacity 0.5s ease;"></div>
         
-        <!-- The placeholder if no map is loaded -->
         <div id="mapPlaceholder" style="text-align: center; color: #555; z-index: 10;">
             <span class="material-symbols-outlined" style="font-size: 48px; margin-bottom: 8px;">map</span>
             <h6 style="margin: 0; color: #888;">Mapbox Integration</h6>
@@ -163,12 +162,14 @@
                     if (!mapboxKey) {
                         document.getElementById('mapHelperText').textContent = "Mapbox API Key not configured in Settings.";
                     } else if (data.lat && data.lng) {
+                        
+                        // Fade out placeholder, fade in map!
                         document.getElementById('mapPlaceholder').style.display = 'none';
-                        document.getElementById('map').style.display = 'block';
+                        document.getElementById('map').style.opacity = '1';
+                        document.getElementById('map').style.pointerEvents = 'auto'; // Re-enable clicking/dragging
                         
                         mapboxgl.accessToken = mapboxKey;
                         
-                        // If map already exists, move it. Otherwise, create it.
                         if (!window.networkMap) {
                             window.networkMap = new mapboxgl.Map({
                                 container: 'map',
@@ -179,27 +180,16 @@
                             window.networkMarker = new mapboxgl.Marker({ color: "#1976d2" })
                                 .setLngLat([data.lng, data.lat])
                                 .addTo(window.networkMap);
-                                
-                            // Force resize once the map initially loads
-                            window.networkMap.on('load', function () {
-                                window.networkMap.resize();
-                            });
                         } else {
                             window.networkMap.setCenter([data.lng, data.lat]);
                             window.networkMarker.setLngLat([data.lng, data.lat]);
                         }
-                        
-                        // The Magic Fix: Force Mapbox to redraw its tiles after unhiding the div
-                        setTimeout(() => {
-                            if (window.networkMap) {
-                                window.networkMap.resize();
-                            }
-                        }, 150);
                     }
                 } else {
                     addressSpan.textContent = "No address configured in Meraki dashboard.";
                     document.getElementById('mapPlaceholder').style.display = 'block';
-                    document.getElementById('map').style.display = 'none';
+                    document.getElementById('map').style.opacity = '0';
+                    document.getElementById('map').style.pointerEvents = 'none';
                     document.getElementById('mapHelperText').textContent = "No coordinates found to display map.";
                 }
             } catch (err) {
