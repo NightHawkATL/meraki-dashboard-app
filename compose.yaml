@@ -68,7 +68,7 @@ services:
     container_name: meraki_react
     restart: always
     ports:
-      - "3000:80" # Nginx serves React on port 3000 to the outside
+      - "65000:80" # Nginx serves React on port 3000 to the outside
     depends_on:
       - backend
     networks:
