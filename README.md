@@ -88,5 +88,3 @@ docker-compose down
 
 ---
 *Developed for seamless Meraki Network Management.*
-
-If the Docker build failed or threw a red error halfway through, just paste the last few lines of the terminal error here and I'll get it fixed for you immediately!
