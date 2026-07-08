@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from . import models
-from .routes import auth, meraki, ui, admin
+from .routes import auth, meraki, ui, admin, scripts
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,6 +24,7 @@ app.include_router(ui.router)
 app.include_router(auth.router)
 app.include_router(meraki.router)
 app.include_router(admin.router)
+app.include_router(scripts.router)
 
 @app.get("/health")
 def health_check():
