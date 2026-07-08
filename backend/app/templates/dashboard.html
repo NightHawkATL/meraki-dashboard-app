@@ -87,8 +87,17 @@
                 <span>(555) 123-4567</span>
             </div>
         </div>
-        <div id="siteInfoPlaceholder" style="color: #888; font-size: 0.85rem;">
-            Select a network to view site details.
+        <div id="siteInfoContent" style="display: none;">
+            <strong id="siteInfoName" style="color: #e0e0e0; display: block; margin-bottom: 12px; font-size: 1.1rem;"></strong>
+            <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.85rem; margin-bottom: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">location_on</span>
+                <span id="siteAddress">1234 Placeholder Way, Atlanta GA</span> <!-- Added ID here! -->
+            </div>
+            <!-- Phone number can stay a placeholder for now until we link Google Places -->
+            <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.85rem;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">phone</span>
+                <span>(555) 123-4567</span>
+            </div>
         </div>
     </div>
     <div class="mui-paper" style="display: flex; align-items: center; justify-content: center; min-height: 250px; background: #0a0a0a;">
