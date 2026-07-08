@@ -17,19 +17,32 @@ def render_home_or_login(request: Request, db: Session = Depends(get_db)):
         {"request": request, "admin_exists": admin_exists}
     )
 
-# --- NEW DASHBOARD ROUTE ---
 @router.get("/dashboard")
 def render_dashboard(
     request: Request, 
-    # By adding current_user here, FastAPI absolutely forbids anyone without a cookie from seeing this page!
+    db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user) 
 ):
-    """Renders the main layout and script execution page."""
+    """Renders the main layout with cached networks for script execution."""
+    # Fetch cached networks for the dropdowns
+    cache = db.query(models.MerakiNetworkCache).filter(models.MerakiNetworkCache.user_id == current_user.id).all()
+    unique_orgs = {item.org_id: {"id": item.org_id, "name": item.org_name} for item in cache}
+    
+    # Mock scripts (we will replace this with GitHub files later!)
+    scripts = [
+        {"id": "port_bounce", "name": "Bounce Switch Ports"},
+        {"id": "vlan_update", "name": "Update Guest VLANs"},
+        {"id": "device_status", "name": "Get Device Status Report"}
+    ]
+
     return templates.TemplateResponse(
         "dashboard.html", 
         {
             "request": request, 
-            "current_user": current_user # Pass the user to HTML so we can display their email
+            "current_user": current_user,
+            "scripts": scripts,
+            "orgs": list(unique_orgs.values()),
+            "networks": cache
         }
     )
 
