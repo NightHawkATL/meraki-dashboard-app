@@ -32,3 +32,22 @@ def render_dashboard(
             "current_user": current_user # Pass the user to HTML so we can display their email
         }
     )
+
+@router.get("/settings")
+def render_settings(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """Renders the settings page with live Meraki cache data."""
+    # Fetch cached networks for this user
+    cache = db.query(models.MerakiNetworkCache).filter(models.MerakiNetworkCache.user_id == current_user.id).all()
+    
+    # Get unique orgs
+    unique_orgs = {item.org_id: {"id": item.org_id, "name": item.org_name} for item in cache}
+    
+    return templates.TemplateResponse(
+        "settings.html", 
+        {
+            "request": request, 
+            "current_user": current_user,
+            "orgs": list(unique_orgs.values()),
+            "networks": cache
+        }
+    )
