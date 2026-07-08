@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models
-from ..deps import get_current_user # <--- Import the security dependency
+from ..deps import get_current_user
 
 router = APIRouter(tags=["User Interface"])
 templates = Jinja2Templates(directory="app/templates")
@@ -24,19 +24,18 @@ def render_dashboard(
     current_user: models.User = Depends(get_current_user) 
 ):
     """Renders the main layout with cached networks for script execution."""
-    # Fetch cached networks for the dropdowns
     cache = db.query(models.MerakiNetworkCache).filter(models.MerakiNetworkCache.user_id == current_user.id).all()
     unique_orgs = {item.org_id: {"id": item.org_id, "name": item.org_name} for item in cache}
     
-    # Mock scripts (we will replace this with GitHub files later!)
     scripts = [
         {"id": "port_bounce", "name": "Bounce Switch Ports"},
         {"id": "vlan_update", "name": "Update Guest VLANs"},
         {"id": "device_status", "name": "Get Device Status Report"}
     ]
+
     settings_row = db.query(models.AdminSettings).first()
     mapbox_key = settings_row.mapbox_api_key if settings_row else ""
-    
+
     return templates.TemplateResponse(
         "dashboard.html", 
         {
@@ -44,22 +43,20 @@ def render_dashboard(
             "current_user": current_user,
             "scripts": scripts,
             "orgs": list(unique_orgs.values()),
-            "networks": cache
+            "networks": cache,
+            "mapbox_key": mapbox_key
         }
     )
 
 @router.get("/settings")
 def render_settings(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """Renders the settings page with live Meraki cache data."""
-    # Fetch cached networks for this user
     cache = db.query(models.MerakiNetworkCache).filter(models.MerakiNetworkCache.user_id == current_user.id).all()
-    
-    # Get unique orgs
     unique_orgs = {item.org_id: {"id": item.org_id, "name": item.org_name} for item in cache}
     
     settings_row = db.query(models.AdminSettings).first()
     mapbox_key = settings_row.mapbox_api_key if settings_row else ""
-    
+
     return templates.TemplateResponse(
         "settings.html", 
         {
