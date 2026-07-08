@@ -84,7 +84,24 @@
 
     <!-- TAB 3: SYSTEM -->
     <div id="tab-system" class="tab-content">
-        <p style="color: #aaa;">Mapbox and System Settings coming soon.</p>
+        <div id="admin-alerts"></div>
+        
+        <h5 style="margin-bottom: 8px;">Mapbox Integration</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Enter your Mapbox public token here to enable dynamic maps on the dashboard.
+        </p>
+        
+        <form hx-post="/api/admin/mapbox" hx-target="#admin-alerts" hx-swap="innerHTML" 
+              style="display: flex; gap: 12px; align-items: stretch; max-width: 600px;">
+            <div style="flex-grow: 1;">
+                <!-- We inject the existing key into the value so you can see it if it's saved! -->
+                <input type="text" name="mapbox_key" class="mui-input" style="width: 100%;" 
+                       placeholder="pk.eyJ1..." value="{{ mapbox_key }}" required>
+            </div>
+            <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">
+                Save Mapbox Key
+            </button>
+        </form>
     </div>
 </div>
 
