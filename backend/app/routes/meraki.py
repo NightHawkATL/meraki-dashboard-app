@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from fastapi import APIRouter, Depends, Form, Response
 from fastapi.responses import HTMLResponse # <--- NEW IMPORT
 from sqlalchemy.orm import Session
@@ -59,6 +60,40 @@ def sync_meraki_data(
         
         response.headers["HX-Refresh"] = "true"
         return ""
+
+@router.get("/network/{network_id}/location")
+def get_network_location(
+    network_id: str,
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    # Fetches the physical address and coordinates of devices in a specific network.
+    if not current_user.meraki_api_key_encrypted:
+        raise HTTPException(status_code=400, detail="No API key found.")
+    
+    api_key = security.decrypt_api_key(current_user.meraki_api_key_encrypted)
+    
+    try:
+        dashboard = meraki.DashboardAPI(api_key=api_key, print_console=False, suppress_logging=True)
+        
+        # Pull all devices registered to this network
+        devices = dashboard.networks.getNetworkDevices(network_id)
+        
+        # Scan devices for one that has location data populated
+        for dev in devices:
+            if dev.get('address') or (dev.get('lat') and dev.get('lng')):
+                return {
+                    "status": "success",
+                    "address": dev.get('address', 'Address not set in Meraki'),
+                    "lat": dev.get('lat'),
+                    "lng": dev.get('lng'),
+                    "model": dev.get('model', 'Unknown Device')
+                }
+                
+        return {"status": "not_found", "message": "No location data found on devices in this network."}
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
     
     except Exception as e:
         return f"<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>Sync Error: {str(e)}</article>"
