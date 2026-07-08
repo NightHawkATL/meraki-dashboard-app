@@ -71,6 +71,38 @@
             margin-top: var(--topbar-height); margin-left: var(--nav-width); padding: 2rem;
             height: calc(100vh - var(--topbar-height)); overflow-y: auto;
         }
+        /* --- MUI COMPACT STYLES --- */
+        .mui-paper {
+            background: var(--sidebar-bg); border: 1px solid #333; 
+            border-radius: 8px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .mui-input {
+            margin-bottom: 0 !important; padding: 8px 12px !important; 
+            font-size: 0.9rem !important; height: auto !important;
+            background: #121212 !important; border: 1px solid #444 !important;
+        }
+        .mui-btn {
+            padding: 8px 24px !important; font-size: 0.85rem !important; 
+            font-weight: 600 !important; text-transform: uppercase; 
+            width: auto !important; height: 100% !important; margin: 0 !important;
+        }
+        
+        /* --- TABS --- */
+        .mui-tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 24px; gap: 8px; }
+        .mui-tab {
+            padding: 10px 20px; cursor: pointer; color: #aaa; text-transform: uppercase; 
+            font-size: 0.8rem; font-weight: 600; border-bottom: 2px solid transparent; transition: 0.2s;
+        }
+        .mui-tab:hover { color: #fff; }
+        .mui-tab.active { color: #1976d2; border-bottom: 2px solid #1976d2; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* --- DUAL PANE LISTS --- */
+        .list-box { height: 350px; overflow-y: auto; border: 1px solid #444; border-radius: 4px; background: #121212; }
+        .list-item { padding: 12px 16px; border-bottom: 1px solid #222; cursor: pointer; transition: 0.2s; }
+        .list-item:hover { background: #1e1e1e; }
+        .list-item.selected { background: rgba(25, 118, 210, 0.15); border-left: 3px solid #1976d2; }
     </style>
 </head>
 <body>
