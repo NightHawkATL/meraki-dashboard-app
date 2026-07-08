@@ -9,35 +9,48 @@
 </hgroup>
 
 <div class="mui-paper" style="padding: 0; overflow-x: auto;">
-    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
         <thead>
-            <tr style="background: #1e1e1e; border-bottom: 1px solid #333;">
-                <th style="padding: 16px; color: #888;">Date & Time</th>
-                <th style="padding: 16px; color: #888;">User</th>
-                <th style="padding: 16px; color: #888;">Script Name</th>
-                <th style="padding: 16px; color: #888;">Target Network</th>
-                <th style="padding: 16px; color: #888;">Status</th>
+            <tr style="background: var(--sidebar-bg); border-bottom: 1px solid #333;">
+                <th style="padding: 12px 16px; color: #888; font-size: 0.85rem;">Date & Time</th>
+                <th style="padding: 12px 16px; color: #888; font-size: 0.85rem;">User</th>
+                <th style="padding: 12px 16px; color: #888; font-size: 0.85rem;">Script Name</th>
+                <th style="padding: 12px 16px; color: #888; font-size: 0.85rem;">Target Network</th>
+                <th style="padding: 12px 16px; color: #888; font-size: 0.85rem;">Status</th>
+                <th style="padding: 12px 16px; color: #888; font-size: 0.85rem; text-align: center;">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for job in jobs %}
-            <tr style="border-bottom: 1px solid #222; transition: 0.2s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">
-                <td style="padding: 16px; color: #aaa;">{{ job.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td style="padding: 16px; color: #e0e0e0;">{{ job.owner.username.split('@')[0] }}</td>
-                <td style="padding: 16px; color: #1976d2; font-weight: 500;">{{ job.script_name }}</td>
-                <td style="padding: 16px; color: #aaa;">{{ job.target_network_id }}</td>
-                <td style="padding: 16px;">
-                    <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;
+            <tr style="border-bottom: 1px solid #222; transition: 0.2s;" onmouseover="this.style.background='#252525'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 12px 16px; color: #aaa; font-size: 0.85rem;">{{ job.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td style="padding: 12px 16px; color: #e0e0e0; font-size: 0.9rem;">{{ job.owner.username.split('@')[0] }}</td>
+                <td style="padding: 12px 16px; color: #1976d2; font-weight: 600; font-size: 0.9rem;">{{ job.script_name }}</td>
+                <td style="padding: 12px 16px; color: #aaa; font-size: 0.85rem;">
+                    <!-- Use the dictionary to show the Name, fallback to ID if deleted! -->
+                    {{ network_names.get(job.target_network_id, job.target_network_id) }}
+                </td>
+                <td style="padding: 12px 16px;">
+                    <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;
                         background: {% if job.status == 'Success' %}rgba(76, 175, 80, 0.2); color: #4caf50;
                                     {% elif job.status == 'Failed' %}rgba(244, 67, 54, 0.2); color: #f44336;
                                     {% else %}rgba(255, 235, 59, 0.2); color: #ffeb3b;{% endif %}">
                         {{ job.status }}
                     </span>
                 </td>
+                <td style="padding: 12px 16px; text-align: center;">
+                    {% if job.status == 'Failed' %}
+                        <!-- Run Again Button -->
+                        <button hx-post="/api/scripts/retry/{{ job.id }}" 
+                                class="mui-btn" style="background: transparent; border: 1px solid #1976d2; color: #1976d2; padding: 4px 12px !important;">
+                            Run Again
+                        </button>
+                    {% endif %}
+                </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" style="padding: 24px; text-align: center; color: #888;">No execution history found.</td>
+                <td colspan="6" style="padding: 24px; text-align: center; color: #888;">No execution history found.</td>
             </tr>
             {% endfor %}
         </tbody>
