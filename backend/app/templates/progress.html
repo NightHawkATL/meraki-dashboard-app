@@ -1,0 +1,36 @@
+<!-- HTMX Magic: While Pending/Running, quietly fetch updates every 1.5 seconds! -->
+<div id="execution-container" class="mui-paper" style="border: 1px solid #1976d2; margin-bottom: 24px;"
+     {% if job.status in ['Pending', 'Running'] %}
+     hx-get="/api/scripts/progress/{{ job.id }}" hx-trigger="every 1.5s" hx-swap="outerHTML"
+     {% endif %}>
+    
+    <h5 style="color: #1976d2; margin-bottom: 8px;">Execution Progress</h5>
+    
+    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem;">
+        <span style="color: #fff;"><strong>Script:</strong> {{ job.script_name }}</span>
+        <span style="font-weight: bold; background: {% if job.status == 'Success' %}rgba(76, 175, 80, 0.2){% elif job.status == 'Failed' %}rgba(244, 67, 54, 0.2){% else %}rgba(255, 235, 59, 0.2){% endif %}; 
+                     color: {% if job.status == 'Success' %}#4caf50{% elif job.status == 'Failed' %}#f44336{% else %}#ffeb3b{% endif %}; 
+                     padding: 4px 12px; border-radius: 12px;">
+            {{ job.status }}
+        </span>
+    </div>
+    
+    <!-- Terminal Window -->
+    <div style="background: #0a0a0a; padding: 16px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #00ff00; max-height: 250px; overflow-y: auto;">
+        {% for log in job.progress_log %}
+            <div style="margin-bottom: 6px; color: {% if log.status == 'error' %}#f44336{% elif log.status == 'success' %}#4caf50{% else %}#00ff00{% endif %};">
+                > {{ log.step }}
+            </div>
+        {% endfor %}
+        {% if job.status in ['Pending', 'Running'] %}
+            <div style="animation: pulse 1.5s infinite;">> _</div>
+        {% endif %}
+    </div>
+
+    {% if job.status in ['Success', 'Failed'] %}
+        <button class="mui-btn" style="background: transparent; border: 1px solid #1976d2; color: #1976d2; margin-top: 16px; cursor: pointer; width: 100%;" 
+                onclick="window.location.reload();">Close / Start New Script</button>
+    {% endif %}
+    
+    <style>@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }</style>
+</div>
