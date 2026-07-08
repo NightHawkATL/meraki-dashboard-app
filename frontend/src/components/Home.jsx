@@ -1,44 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { 
   Box, Grid, Card, CardContent, Typography, TextField, 
   MenuItem, Button, Autocomplete, Divider, Paper 
 } from '@mui/material';
 import { Map as MapIcon, LocationOn, Phone } from '@mui/icons-material';
+import { AuthContext } from '../context/AuthContext.jsx'; // <--- Bring in the Auth Token
 
-// --- MOCK DATA (We will replace this with live DB data later) ---
+// Scripts will be pulled from GitHub later. Using placeholders for the UI.
 const availableScripts = [
   { id: 'port_bounce', name: 'Bounce Switch Ports' },
   { id: 'vlan_update', name: 'Update Guest VLANs' },
   { id: 'device_status', name: 'Get Device Status Report' }
 ];
 
-const cachedOrgs = [
-  { id: 'org_1', name: 'IHG Corporate' },
-  { id: 'org_2', name: 'Test Lab Org' }
-];
-
-const cachedNetworks = {
-  'org_1': [
-    { id: 'net_1', name: 'ATLAA - Main Network' },
-    { id: 'net_2', name: 'NYCBB - Guest Network' }
-  ],
-  'org_2': [
-    { id: 'net_3', name: 'Lab Router 1' }
-  ]
-};
-// ----------------------------------------------------------------
-
 const Home = () => {
+  const { token } = useContext(AuthContext);
+
+  // Real Database State
+  const [cachedOrgs, setCachedOrgs] = useState([]);
+  const [cachedNetworks, setCachedNetworks] = useState({});
+  const [allNetworks, setAllNetworks] = useState([]); // Flat list for the search bar
+
+  // Form Selections
   const [selectedScript, setSelectedScript] = useState('');
   const [selectedOrg, setSelectedOrg] = useState('');
   const [selectedNetwork, setSelectedNetwork] = useState('');
   const [searchQuery, setSearchQuery] = useState(null);
 
-  // When a user uses the Smart Search, Auto-Fill the Org and Network!
+  // 1. Fetch the real Meraki cache when the page loads!
+  useEffect(() => {
+    const fetchCache = async () => {
+      try {
+        const response = await fetch('/api/meraki/cache', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCachedOrgs(data.orgs);
+          setCachedNetworks(data.networks);
+          
+          // Combine all networks into one big list for the Smart Search box
+          const flatNetworks = Object.values(data.networks).flat();
+          setAllNetworks(flatNetworks);
+        }
+      } catch (err) {
+        console.error("Failed to fetch cache:", err);
+      }
+    };
+    fetchCache();
+  }, [token]);
+
+  // 2. Smart Search Auto-Fill Logic
   const handleSmartSearch = (event, newValue) => {
     setSearchQuery(newValue);
     if (newValue) {
-      // Find which org this network belongs to
+      // Find which organization this network belongs to
       const orgId = Object.keys(cachedNetworks).find(org => 
         cachedNetworks[org].some(net => net.id === newValue.id)
       );
@@ -49,10 +65,6 @@ const Home = () => {
     }
   };
 
-  // Flatten networks for the search bar
-  const allNetworks = Object.values(cachedNetworks).flat();
-
-  // Determine if we are ready to execute
   const isReadyToExecute = selectedScript && selectedOrg && selectedNetwork;
 
   return (
@@ -72,7 +84,7 @@ const Home = () => {
         />
       </Paper>
 
-      {/* 2. CASCADING SELECTION BOXES (Horizontal Row) */}
+      {/* 2. CASCADING SELECTION BOXES */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {/* Box 1: Script */}
         <Grid item xs={12} md={4}>
