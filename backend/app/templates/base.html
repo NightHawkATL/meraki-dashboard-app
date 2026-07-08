@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Meraki Dashboard App</title>
-    <!-- Pico.css for base styling -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-    <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-    <!-- Google Material Symbols (Icons) -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" />
+    
+    <!-- UI SCALING SCRIPT -->
+    <script>
+        // Set the UI scale immediately to prevent flickering. Default to 14px (Standard 1080p scale).
+        const savedScale = localStorage.getItem('uiScale') || '14px';
+        document.documentElement.style.setProperty('font-size', savedScale, 'important');
+    </script>
     
     <style>
         /* Exact colors used in MUI Dark Mode */
