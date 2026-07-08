@@ -28,28 +28,20 @@
             Your key is AES-encrypted at rest. It is only decrypted in server memory during script execution.
         </p>
         
-        <!-- COMPACT HORIZONTAL FORM -->
         <form hx-post="/api/meraki/key" hx-target="#settings-alerts" hx-swap="innerHTML" 
               style="display: flex; gap: 12px; align-items: stretch; margin-bottom: 32px;">
-            
             <div style="flex-grow: 1; position: relative;">
-                <input type="password" name="api_key" class="mui-input" placeholder="Cisco Meraki API Key" required>
+                <input type="password" name="api_key" class="mui-input" placeholder="Cisco Meraki API Key" style="width: 100%;" required>
             </div>
-            
-            <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">
-                Save Key
-            </button>
+            <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Key</button>
             <button type="button" class="mui-btn" hx-post="/api/meraki/sync" hx-target="#settings-alerts" hx-swap="innerHTML"
-                    style="background: transparent; border: 1px solid #9c27b0; color: #9c27b0;">
-                Verify & Sync
-            </button>
+                    style="background: transparent; border: 1px solid #9c27b0; color: #9c27b0;">Verify & Sync</button>
         </form>
 
         <hr style="border-color: #333; margin: 24px 0;">
 
         <h5 style="margin-bottom: 16px;">Cached Meraki Data</h5>
         
-        <!-- COMPACT DUAL PANE LISTS -->
         <div class="grid" style="gap: 24px;">
             <!-- LEFT: Orgs -->
             <div>
@@ -68,9 +60,7 @@
             <!-- RIGHT: Networks -->
             <div>
                 <div class="list-box" id="network-list">
-                    <div id="network-placeholder" style="padding: 16px; color: #888; text-align: center;">
-                        Select an Organization to view its Networks.
-                    </div>
+                    <div id="network-placeholder" style="padding: 16px; color: #888; text-align: center;">Select an Organization to view its Networks.</div>
                     {% for net in networks %}
                     <div class="list-item network-item org-{{ net.org_id }}" style="display: none;">
                         <strong style="color: #e0e0e0;">{{ net.network_name }}</strong><br>
@@ -85,47 +75,33 @@
     <!-- TAB 3: SYSTEM -->
     <div id="tab-system" class="tab-content">
         <div id="admin-alerts"></div>
-        
         <h5 style="margin-bottom: 8px;">Mapbox Integration</h5>
         <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
             Enter your Mapbox public token here to enable dynamic maps on the dashboard.
         </p>
         
-        <form hx-post="/api/admin/mapbox" hx-target="#admin-alerts" hx-swap="innerHTML" 
-              style="display: flex; gap: 12px; align-items: stretch; max-width: 600px;">
+        <form hx-post="/api/admin/mapbox" hx-target="#admin-alerts" hx-swap="innerHTML" style="display: flex; gap: 12px; align-items: stretch; max-width: 600px;">
             <div style="flex-grow: 1;">
-                <!-- We inject the existing key into the value so you can see it if it's saved! -->
-                <input type="text" name="mapbox_key" class="mui-input" style="width: 100%;" 
-                       placeholder="pk.eyJ1..." value="{{ mapbox_key }}" required>
+                <input type="text" name="mapbox_key" class="mui-input" style="width: 100%;" placeholder="pk.eyJ1..." value="{{ mapbox_key }}" required>
             </div>
-            <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">
-                Save Mapbox Key
-            </button>
+            <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Mapbox Key</button>
         </form>
     </div>
 </div>
 
-<!-- Vanilla JS to make the Tabs and Lists feel instant like React -->
 <script>
     function switchTab(tabId, tabElement) {
-        // Hide all contents, deactivate all tabs
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.mui-tab').forEach(el => el.classList.remove('active'));
-        // Show target content, activate target tab
         document.getElementById(tabId).classList.add('active');
         tabElement.classList.add('active');
     }
 
     function selectOrg(orgId, element) {
-        // Highlight selected org
         document.querySelectorAll('.org-item').forEach(el => el.classList.remove('selected'));
         element.classList.add('selected');
-
-        // Hide placeholder and all networks
         document.getElementById('network-placeholder').style.display = 'none';
         document.querySelectorAll('.network-item').forEach(el => el.style.display = 'none');
-
-        // Show only networks matching the orgId
         document.querySelectorAll('.org-' + orgId).forEach(el => el.style.display = 'block');
     }
 </script>
