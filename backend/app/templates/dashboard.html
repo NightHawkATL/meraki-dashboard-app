@@ -1,41 +1,57 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Top Navigation Bar -->
-<nav style="border-bottom: 1px solid var(--pico-muted-border-color); padding-bottom: 1rem; margin-bottom: 2rem;">
-    <ul>
-        <li><strong>Meraki Dashboard App</strong></li>
-    </ul>
-    <ul>
-        <li><small>Logged in as: <strong>{{ current_user.username }}</strong></small></li>
-        <!-- HTMX will call the logout route and instantly redirect you -->
-        <li><a href="#" hx-post="/api/auth/logout" style="color: var(--pico-del-color);">Log Out</a></li>
-    </ul>
+<!-- FIXED TOP NAVIGATION BAR -->
+<nav class="app-topbar">
+    <div>
+        <h4 style="margin: 0; color: #fff;">Meraki Dashboard App</h4>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px;">
+        <!-- Placeholder for Theme Toggle Icons we will add later -->
+        <span class="material-symbols-outlined" style="cursor: pointer; color: #aaa;">light_mode</span>
+        <span class="material-symbols-outlined" style="cursor: pointer; color: #aaa;">dark_mode</span>
+    </div>
 </nav>
 
-<!-- Main Layout Grid -->
-<div class="grid">
-    <!-- Sidebar -->
-    <aside style="max-width: 250px;">
-        <nav>
-            <ul>
-                <li><a href="/dashboard">▶ Run Script</a></li>
-                <li><a href="/history">🕒 Recent History</a></li>
-                <li><a href="/settings">⚙ Settings</a></li>
-            </ul>
-        </nav>
-    </aside>
+<!-- FIXED SIDEBAR -->
+<aside class="app-sidebar">
+    <ul>
+        <li>
+            <a href="/dashboard">
+                <span class="material-symbols-outlined">play_arrow</span> Run Script
+            </a>
+        </li>
+        <li>
+            <a href="/history">
+                <span class="material-symbols-outlined">history</span> Recent History
+            </a>
+        </li>
+        <li>
+            <a href="/settings">
+                <span class="material-symbols-outlined">settings</span> Settings
+            </a>
+        </li>
+    </ul>
 
-    <!-- Main Content Area -->
-    <main>
-        <hgroup>
-            <h2>Script Execution</h2>
-            <p>Select a script, organization, and network below.</p>
-        </hgroup>
-        
-        <article>
-            <p><em>(We will rebuild the Smart Search and Cascading Dropdowns right here in the next step!)</em></p>
-        </article>
-    </main>
-</div>
+    <ul>
+        <li>
+            <!-- HTMX calls logout and redirects instantly -->
+            <a class="logout-btn" hx-post="/api/auth/logout">
+                <span class="material-symbols-outlined">logout</span> Log Out
+            </a>
+        </li>
+    </ul>
+</aside>
+
+<!-- MAIN FLUID CONTENT AREA -->
+<main class="app-main">
+    <hgroup>
+        <h2>Script Execution</h2>
+        <p style="color: #aaa;">Select a script, organization, and network below.</p>
+    </hgroup>
+    
+    <article>
+        <p><em>(Smart Search and Cascading Dropdowns will go here!)</em></p>
+    </article>
+</main>
 {% endblock %}
