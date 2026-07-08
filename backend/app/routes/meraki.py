@@ -1,31 +1,37 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Form, Response
+from fastapi.responses import HTMLResponse # <--- NEW IMPORT
 from sqlalchemy.orm import Session
 import meraki
-from .. import models, schemas, security, deps
+from .. import models, security, deps
 from ..database import get_db
-from fastapi import APIRouter, Depends, Form, Response
 
 router = APIRouter(prefix="/api/meraki", tags=["Meraki Integration"])
 
-@router.post("/key")
+# Notice we added response_class=HTMLResponse here!
+@router.post("/key", response_class=HTMLResponse)
 def save_api_key(
     api_key: str = Form(...), 
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(deps.get_current_user)
 ):
-    clean_key = api_key.strip()
+    """Encrypts and saves the Meraki API key to the user's profile."""
+    # Aggressively clean the key (removes spaces, newlines, and accidental quotes)
+    clean_key = api_key.strip().strip('"').strip("'")
+    
     current_user.meraki_api_key_encrypted = security.encrypt_api_key(clean_key)
     db.commit()
-    return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>API key saved securely.</article>"
+    
+    return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>API key saved securely.</article>"
 
-@router.post("/sync")
+@router.post("/sync", response_class=HTMLResponse)
 def sync_meraki_data(
     response: Response, 
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(deps.get_current_user)
 ):
+    """Logs into Meraki, fetches Orgs and Networks, and caches them."""
     if not current_user.meraki_api_key_encrypted:
-        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>No API key found. Please save one first.</article>"
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>No API key found. Please save one first.</article>"
     
     api_key = security.decrypt_api_key(current_user.meraki_api_key_encrypted)
     
@@ -51,31 +57,8 @@ def sync_meraki_data(
             db.bulk_save_objects(new_cache_entries)
         db.commit()
         
-        # HTMX Magic: Tell the browser to refresh the page to show the new lists!
         response.headers["HX-Refresh"] = "true"
         return ""
     
     except Exception as e:
-        return f"<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Sync Error: {str(e)}</article>"
-
-@router.get("/cache")
-def get_meraki_cache(db: Session = Depends(get_db), current_user: models.User = Depends(deps.get_current_user)):
-    """Formats and returns the cached networks for the React UI to display."""
-    cache = db.query(models.MerakiNetworkCache).filter(models.MerakiNetworkCache.user_id == current_user.id).all()
-    
-    orgs_dict = {}
-    networks_dict = {}
-    
-    # Group the flat database rows into Orgs and Networks for React
-    for item in cache:
-        if item.org_id not in orgs_dict:
-            orgs_dict[item.org_id] = {"id": item.org_id, "name": item.org_name, "netCount": 0}
-            networks_dict[item.org_id] = []
-        
-        orgs_dict[item.org_id]["netCount"] += 1
-        networks_dict[item.org_id].append({"id": item.network_id, "name": item.network_name})
-    
-    return {
-        "orgs": list(orgs_dict.values()),
-        "networks": networks_dict
-    }
+        return f"<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>Sync Error: {str(e)}</article>"
