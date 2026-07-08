@@ -3,14 +3,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from . import models
-from .routes import auth, meraki
 
-# Create all tables in PostgreSQL
+# Import the new ui router along with the others
+from .routes import auth, meraki, ui  
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Meraki Dashboard App")
 
-# Allow the frontend to communicate with this backend securely
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -19,10 +19,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount the static directory for CSS, JS, and Images
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Include API Routes
+# Include all the routes!
+app.include_router(ui.router)      # <--- Add the UI router
 app.include_router(auth.router)
 app.include_router(meraki.router)
 
