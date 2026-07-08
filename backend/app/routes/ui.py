@@ -55,7 +55,7 @@ def render_settings(request: Request, db: Session = Depends(get_db), current_use
     unique_orgs = {item.org_id: {"id": item.org_id, "name": item.org_name} for item in cache}
     
     settings_row = db.query(models.AdminSettings).first()
-    mapbox_key = settings_row.mapbox_api_key if settings_row else ""
+    mapbox_key = settings_row.mapbox_api_key if settings_row and settings_row.mapbox_api_key else ""
 
     return templates.TemplateResponse(
         "settings.html", 
