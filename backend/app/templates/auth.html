@@ -1,42 +1,41 @@
 {% extends "base.html" %}
 
 {% block content %}
-<article class="centered-container">
-    <header>
-        <h2 style="text-align: center; margin-bottom: 0;">
-            {% if not admin_exists %}Welcome to Meraki App{% else %}Admin Login{% endif %}
-        </h2>
-    </header>
+<div class="auth-wrapper">
+    <article class="auth-card">
+        <header>
+            <h3 style="text-align: center; margin-bottom: 0;">
+                {% if not admin_exists %}Welcome to Meraki App{% else %}Admin Login{% endif %}
+            </h3>
+        </header>
 
-    <!-- HTMX will inject any red error messages right here -->
-    <div id="auth-alerts"></div>
+        <div id="auth-alerts"></div>
 
-    {% if not admin_exists %}
-        <p style="text-align: center;">Let's create your master Admin account.</p>
-        <form hx-post="/api/auth/setup" hx-target="#auth-alerts" hx-swap="innerHTML">
-            <label>Admin Email Address
-                <!-- Enforces email format on the browser side -->
-                <input type="email" name="username" placeholder="admin@hotel.com" required>
-            </label>
-            <label>Secure Password
-                <input type="password" name="password" required>
-            </label>
-            <label>Confirm Password
-                <input type="password" name="confirm_password" required>
-            </label>
-            <button type="submit">Create Admin Account</button>
-        </form>
-    {% else %}
-        <!-- Login Form -->
-        <form hx-post="/api/auth/login" hx-target="#auth-alerts" hx-swap="innerHTML">
-            <label>Email Address
-                <input type="email" name="username" required>
-            </label>
-            <label>Password
-                <input type="password" name="password" required>
-            </label>
-            <button type="submit">Log In</button>
-        </form>
-    {% endif %}
-</article>
+        {% if not admin_exists %}
+            <p style="text-align: center; font-size: 0.9rem; color: #aaa;">Create your master Admin account.</p>
+            <form hx-post="/api/auth/setup" hx-target="#auth-alerts" hx-swap="innerHTML">
+                <label>Admin Email
+                    <input type="email" name="username" required>
+                </label>
+                <label>Secure Password
+                    <input type="password" name="password" required>
+                </label>
+                <label>Confirm Password
+                    <input type="password" name="confirm_password" required>
+                </label>
+                <button type="submit">Create Account</button>
+            </form>
+        {% else %}
+            <form hx-post="/api/auth/login" hx-target="#auth-alerts" hx-swap="innerHTML" style="margin-top: 1.5rem;">
+                <label>Email Address
+                    <input type="email" name="username" required>
+                </label>
+                <label>Password
+                    <input type="password" name="password" required>
+                </label>
+                <button type="submit">Log In</button>
+            </form>
+        {% endif %}
+    </article>
+</div>
 {% endblock %}
