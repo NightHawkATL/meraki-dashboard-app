@@ -9,7 +9,6 @@
 <!-- 1. SMART SEARCH BAR -->
 <div class="mui-paper" style="margin-bottom: 24px; padding: 16px 24px;">
     <label style="color: #1976d2; font-weight: 600; display: block; margin-bottom: 8px;">Smart Search</label>
-    <!-- HTML5 Datalist creates an instant auto-complete dropdown natively! -->
     <input type="text" id="smartSearch" class="mui-input" style="width: 100%;" 
            placeholder="Search for Inncode, Hotel Name, or Network..." 
            list="network-datalist" oninput="handleSmartSearch(this.value)">
@@ -23,7 +22,6 @@
 
 <!-- 2. CASCADING SELECTION BOXES -->
 <div style="display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-bottom: 24px;">
-    
     <!-- Box 1: Script -->
     <div class="mui-paper" id="box-script" style="border-top: 4px solid #1976d2;">
         <label style="font-weight: 600; display: block; margin-bottom: 12px;">1. Select Script</label>
@@ -80,24 +78,16 @@
             <strong id="siteInfoName" style="color: #e0e0e0; display: block; margin-bottom: 12px; font-size: 1.1rem;"></strong>
             <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.85rem; margin-bottom: 8px;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">location_on</span>
-                <span>1234 Placeholder Way, Atlanta GA</span>
+                <!-- ID added here so Javascript can target it! -->
+                <span id="siteAddress">1234 Placeholder Way, Atlanta GA</span> 
             </div>
             <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.85rem;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">phone</span>
                 <span>(555) 123-4567</span>
             </div>
         </div>
-        <div id="siteInfoContent" style="display: none;">
-            <strong id="siteInfoName" style="color: #e0e0e0; display: block; margin-bottom: 12px; font-size: 1.1rem;"></strong>
-            <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.85rem; margin-bottom: 8px;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">location_on</span>
-                <span id="siteAddress">1234 Placeholder Way, Atlanta GA</span> <!-- Added ID here! -->
-            </div>
-            <!-- Phone number can stay a placeholder for now until we link Google Places -->
-            <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.85rem;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">phone</span>
-                <span>(555) 123-4567</span>
-            </div>
+        <div id="siteInfoPlaceholder" style="color: #888; font-size: 0.85rem;">
+            Select a network to view site details.
         </div>
     </div>
     <div class="mui-paper" style="display: flex; align-items: center; justify-content: center; min-height: 250px; background: #0a0a0a;">
@@ -109,7 +99,6 @@
     </div>
 </div>
 
-<!-- VANILLA JS FOR CASCADING LOGIC -->
 <script>
     const scriptSel = document.getElementById('scriptSelect');
     const orgSel = document.getElementById('orgSelect');
@@ -118,8 +107,8 @@
     const boxOrg = document.getElementById('box-org');
     const boxNet = document.getElementById('box-net');
     
+    // Notice the "async" keyword here, allowing us to fetch API data!
     async function checkCascading(orgChanged = false) {
-        // 1. Script Selected?
         if (scriptSel.value) {
             boxScript.style.borderTop = '4px solid #4caf50';
             orgSel.disabled = false; boxOrg.style.opacity = '1';
@@ -128,11 +117,10 @@
             orgSel.disabled = true; boxOrg.style.opacity = '0.5';
         }
 
-        // 2. Org Selected?
         if (orgSel.value) {
             netSel.disabled = false; boxNet.style.opacity = '1';
             if (orgChanged) {
-                netSel.value = ""; // Reset network dropdown
+                netSel.value = ""; 
                 document.querySelectorAll('.net-opt').forEach(opt => {
                     opt.style.display = opt.classList.contains('org-' + orgSel.value) ? 'block' : 'none';
                 });
@@ -141,30 +129,27 @@
             netSel.disabled = true; boxNet.style.opacity = '0.5';
         }
 
-        // 3. All 3 Selected? Show Verification & Fetch Real Site Info!
         if (scriptSel.value && orgSel.value && netSel.value) {
             document.getElementById('verifyScript').textContent = scriptSel.options[scriptSel.selectedIndex].text;
             document.getElementById('verifyNet').textContent = netSel.options[netSel.selectedIndex].text;
             document.getElementById('verifyPanel').style.display = 'block';
             
-            // Set the Name and show loading text
             document.getElementById('siteInfoName').textContent = netSel.options[netSel.selectedIndex].text;
+            
             const addressSpan = document.getElementById('siteAddress');
             addressSpan.textContent = "Fetching location from Meraki...";
             
             document.getElementById('siteInfoContent').style.display = 'block';
             document.getElementById('siteInfoPlaceholder').style.display = 'none';
 
-            // --- NEW: Fetch Real Location Data from Backend ---
+            // Fetch Real Location Data from Backend!
             try {
                 const response = await fetch(`/api/meraki/network/${netSel.value}/location`);
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    // Update UI with real Meraki address!
                     addressSpan.textContent = data.address;
                     console.log(`Found Coordinates: Lat ${data.lat}, Lng ${data.lng}`);
-                    // (We will pass lat/lng to Mapbox here later!)
                 } else {
                     addressSpan.textContent = "No address configured in Meraki dashboard.";
                 }
@@ -183,7 +168,6 @@
         const datalist = document.getElementById('network-datalist');
         for (let option of datalist.options) {
             if (option.value === val) {
-                // Auto-fill Org & Network
                 orgSel.value = option.getAttribute('data-org');
                 checkCascading(true);
                 netSel.value = option.getAttribute('data-net');
