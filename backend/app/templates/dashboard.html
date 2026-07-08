@@ -1,6 +1,7 @@
 {% extends "app_layout.html" %}
 
 {% block app_content %}
+<!-- Import Mapbox Libraries -->
 <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
 <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
 
@@ -73,8 +74,29 @@
     </div>
 </div>
 
-<!-- 4. SITE INFO & MAPBOX PLACEHOLDERS -->
-<div class="mui-paper" style="display: flex; align-items: center; justify-content: center; min-height: 300px; background: #0a0a0a; padding: 0; overflow: hidden; position: relative;">
+<!-- 4. SITE INFO & MAPBOX -->
+<div style="display: grid; gap: 24px; grid-template-columns: 1fr 2fr;">
+    <!-- LEFT: Site Information -->
+    <div class="mui-paper">
+        <h5 style="margin-bottom: 16px;">Site Information</h5>
+        <div id="siteInfoContent" style="display: none;">
+            <strong id="siteInfoName" style="color: #e0e0e0; display: block; margin-bottom: 12px; font-size: 1.1rem;"></strong>
+            <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.85rem; margin-bottom: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">location_on</span>
+                <span id="siteAddress">1234 Placeholder Way, Atlanta GA</span> 
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.85rem;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">phone</span>
+                <span>(555) 123-4567</span>
+            </div>
+        </div>
+        <div id="siteInfoPlaceholder" style="color: #888; font-size: 0.85rem;">
+            Select a network to view site details.
+        </div>
+    </div>
+    
+    <!-- RIGHT: Mapbox Integration -->
+    <div class="mui-paper" style="display: flex; align-items: center; justify-content: center; min-height: 300px; background: #0a0a0a; padding: 0; overflow: hidden; position: relative;">
         <!-- The actual map will render inside this div -->
         <div id="map" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: none;"></div>
         
@@ -85,6 +107,7 @@
             <small id="mapHelperText">Map will appear here when a network is selected.</small>
         </div>
     </div>
+</div>
 
 <script>
     const scriptSel = document.getElementById('scriptSelect');
@@ -94,7 +117,6 @@
     const boxOrg = document.getElementById('box-org');
     const boxNet = document.getElementById('box-net');
     
-    // Notice the "async" keyword here, allowing us to fetch API data!
     async function checkCascading(orgChanged = false) {
         if (scriptSel.value) {
             boxScript.style.borderTop = '4px solid #4caf50';
@@ -129,7 +151,7 @@
             document.getElementById('siteInfoContent').style.display = 'block';
             document.getElementById('siteInfoPlaceholder').style.display = 'none';
 
-            // Fetch Real Location Data from Backend!
+            // --- MAPBOX DYNAMIC FETCHING ---
             try {
                 const response = await fetch(`/api/meraki/network/${netSel.value}/location`);
                 const data = await response.json();
@@ -137,7 +159,6 @@
                 if (data.status === 'success') {
                     addressSpan.textContent = data.address;
                     
-                    // --- MAPBOX MAGIC ---
                     const mapboxKey = "{{ mapbox_key }}";
                     if (!mapboxKey) {
                         document.getElementById('mapHelperText').textContent = "Mapbox API Key not configured in Settings.";
@@ -147,15 +168,14 @@
                         
                         mapboxgl.accessToken = mapboxKey;
                         
-                        // If map already exists, just move it. Otherwise, create it!
+                        // If map already exists, move it. Otherwise, create it.
                         if (!window.networkMap) {
                             window.networkMap = new mapboxgl.Map({
-                                container: 'map', // matches the div id
-                                style: 'mapbox://styles/mapbox/dark-v11', // Sleek dark mode map!
-                                center: [data.lng, data.lat], // Mapbox uses [Lng, Lat] format
+                                container: 'map',
+                                style: 'mapbox://styles/mapbox/dark-v11', 
+                                center: [data.lng, data.lat],
                                 zoom: 14
                             });
-                            // Add a marker
                             window.networkMarker = new mapboxgl.Marker({ color: "#1976d2" })
                                 .setLngLat([data.lng, data.lat])
                                 .addTo(window.networkMap);
