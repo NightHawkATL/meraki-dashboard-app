@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Top Navigation Bar -->
+<nav style="border-bottom: 1px solid var(--pico-muted-border-color); padding-bottom: 1rem; margin-bottom: 2rem;">
+    <ul>
+        <li><strong>Meraki Dashboard App</strong></li>
+    </ul>
+    <ul>
+        <li><small>Logged in as: <strong>{{ current_user.username }}</strong></small></li>
+        <!-- HTMX will call the logout route and instantly redirect you -->
+        <li><a href="#" hx-post="/api/auth/logout" style="color: var(--pico-del-color);">Log Out</a></li>
+    </ul>
+</nav>
+
+<!-- Main Layout Grid -->
+<div class="grid">
+    <!-- Sidebar -->
+    <aside style="max-width: 250px;">
+        <nav>
+            <ul>
+                <li><a href="/dashboard">▶ Run Script</a></li>
+                <li><a href="/history">🕒 Recent History</a></li>
+                <li><a href="/settings">⚙ Settings</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main>
+        <hgroup>
+            <h2>Script Execution</h2>
+            <p>Select a script, organization, and network below.</p>
+        </hgroup>
+        
+        <article>
+            <p><em>(We will rebuild the Smart Search and Cascading Dropdowns right here in the next step!)</em></p>
+        </article>
+    </main>
+</div>
+{% endblock %}
