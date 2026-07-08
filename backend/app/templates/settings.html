@@ -82,7 +82,8 @@
         
         <form hx-post="/api/admin/mapbox" hx-target="#admin-alerts" hx-swap="innerHTML" style="display: flex; gap: 12px; align-items: stretch; max-width: 600px;">
             <div style="flex-grow: 1;">
-                <input type="text" name="mapbox_key" class="mui-input" style="width: 100%;" placeholder="pk.eyJ1..." value="{{ mapbox_key }}" required>
+                <!-- Changed type to "password" to mask the key! -->
+                <input type="password" name="mapbox_key" class="mui-input" style="width: 100%;" placeholder="pk.eyJ1..." value="{{ mapbox_key }}" required>
             </div>
             <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Mapbox Key</button>
         </form>
