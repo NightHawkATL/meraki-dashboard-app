@@ -3,9 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from . import models
-
-# Import the new ui router along with the others
-from .routes import auth, meraki, ui  
+from .routes import auth, meraki, ui, admin
 
 Base.metadata.create_all(bind=engine)
 
@@ -22,9 +20,10 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Include all the routes!
-app.include_router(ui.router)      # <--- Add the UI router
+app.include_router(ui.router)
 app.include_router(auth.router)
 app.include_router(meraki.router)
+app.include_router(admin.router)
 
 @app.get("/health")
 def health_check():
