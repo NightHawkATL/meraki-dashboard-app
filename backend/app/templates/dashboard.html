@@ -62,24 +62,25 @@
     </div>
 </div>
 
-<!-- 3. EXECUTION VERIFICATION PANEL (Now an HTMX Form!) -->
-<form id="verifyPanel" class="mui-paper" style="display: none; border: 1px solid #1976d2; margin-bottom: 24px;"
-      hx-post="/api/scripts/run" hx-swap="none">
-    
-    <!-- Hidden inputs that hold the IDs for the backend to read -->
-    <input type="hidden" name="script_id" id="hiddenScriptId">
-    <input type="hidden" name="org_id" id="hiddenOrgId">
-    <input type="hidden" name="network_id" id="hiddenNetworkId">
+<!-- 3. EXECUTION VERIFICATION PANEL -->
+<div id="execution-container">
+    <form id="verifyPanel" class="mui-paper" style="display: none; border: 1px solid #1976d2; margin-bottom: 24px;"
+          hx-post="/api/scripts/run" hx-target="#execution-container" hx-swap="outerHTML">
+        
+        <input type="hidden" name="script_id" id="hiddenScriptId">
+        <input type="hidden" name="org_id" id="hiddenOrgId">
+        <input type="hidden" name="network_id" id="hiddenNetworkId">
 
-    <h5 style="color: #1976d2; margin-bottom: 8px;">Verification</h5>
-    <p style="font-size: 0.95rem; margin-bottom: 16px;">
-        You are about to run <strong id="verifyScript" style="color:#fff;"></strong> on <strong id="verifyNet" style="color:#fff;"></strong>.
-    </p>
-    <div style="display: flex; gap: 12px;">
-        <button type="submit" class="mui-btn" style="background: #4caf50; border: none; color: white; cursor: pointer;">Execute Script</button>
-        <button type="button" class="mui-btn" style="background: transparent; border: 1px solid #f44336; color: #f44336; cursor: pointer;" onclick="resetForm()">Cancel / Reset</button>
-    </div>
-</form>
+        <h5 style="color: #1976d2; margin-bottom: 8px;">Verification</h5>
+        <p style="font-size: 0.95rem; margin-bottom: 16px;">
+            You are about to run <strong id="verifyScript" style="color:#fff;"></strong> on <strong id="verifyNet" style="color:#fff;"></strong>.
+        </p>
+        <div style="display: flex; gap: 12px;">
+            <button type="submit" class="mui-btn" style="background: #4caf50; border: none; color: white; cursor: pointer;">Execute Script</button>
+            <button type="button" class="mui-btn" style="background: transparent; border: 1px solid #f44336; color: #f44336; cursor: pointer;" onclick="resetForm()">Cancel</button>
+        </div>
+    </form>
+</div>
 
 <!-- 4. SITE INFO & MAPBOX -->
 <div style="display: grid; gap: 24px; grid-template-columns: 1fr 2fr;">
