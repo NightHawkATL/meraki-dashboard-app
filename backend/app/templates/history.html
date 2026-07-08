@@ -1,0 +1,54 @@
+{% extends "app_layout.html" %}
+
+{% block app_content %}
+<hgroup style="margin-bottom: 24px;">
+    <h2 style="margin-bottom: 4px;">Recent History</h2>
+    <p style="color: #aaa; font-size: 0.9rem;">View logs and outputs from your executed scripts.</p>
+</hgroup>
+
+<!-- HTMX Magic: If there are running jobs, poll this URL every 2 seconds and swap the table cleanly! -->
+<div id="job-table-container" 
+    {% if has_running_jobs %} hx-get="/history" hx-trigger="every 2s" hx-select="#job-table-container" hx-swap="outerHTML" {% endif %}>
+    
+    {% for job in jobs %}
+    <div class="mui-paper" style="margin-bottom: 16px; border-left: 4px solid {% if job.status == 'Success' %}#4caf50{% elif job.status == 'Failed' %}#f44336{% else %}#ffeb3b{% endif %};">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <div>
+                <strong style="color: #fff; font-size: 1.1rem;">{{ job.script_name }}</strong>
+                <span style="color: #888; font-size: 0.85rem; margin-left: 8px;">Job #{{ job.id }}</span>
+                <div style="color: #aaa; font-size: 0.85rem; margin-top: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">lan</span> {{ job.target_network_id }}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;
+                    background: {% if job.status == 'Success' %}rgba(76, 175, 80, 0.2); color: #4caf50;
+                                {% elif job.status == 'Failed' %}rgba(244, 67, 54, 0.2); color: #f44336;
+                                {% else %}rgba(255, 235, 59, 0.2); color: #ffeb3b;{% endif %}">
+                    {{ job.status }}
+                </span>
+                <div style="color: #888; font-size: 0.8rem; margin-top: 4px;">{{ job.timestamp.strftime('%Y-%m-%d %H:%M') }}</div>
+            </div>
+        </div>
+
+        <!-- Progress Logs Terminal -->
+        <div style="background: #0a0a0a; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #00ff00; max-height: 150px; overflow-y: auto;">
+            {% for log in job.progress_log %}
+                <div style="margin-bottom: 4px; color: {% if log.status == 'error' %}#f44336{% elif log.status == 'success' %}#4caf50{% else %}#00ff00{% endif %};">
+                    > {{ log.step }}
+                </div>
+            {% endfor %}
+            {% if job.status in ['Pending', 'Running'] %}
+                <div style="animation: pulse 1.5s infinite;">> _</div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <p style="color: #888;">No scripts have been executed yet.</p>
+    {% endfor %}
+</div>
+
+<style>
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+</style>
+{% endblock %}
