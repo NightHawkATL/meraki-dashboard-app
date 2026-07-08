@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="centered-container">
+    <header>
+        <h2 style="text-align: center; margin-bottom: 0;">
+            {% if not admin_exists %}Welcome to Meraki App{% else %}Admin Login{% endif %}
+        </h2>
+    </header>
+
+    <div id="auth-alerts"></div>
+
+    {% if not admin_exists %}
+        <p style="text-align: center;">Let's create your master Admin account.</p>
+        <!-- Setup Form -->
+        <form hx-post="/api/auth/setup" hx-target="#auth-alerts" hx-swap="innerHTML">
+            <label>Admin Email / Username
+                <input type="text" name="username" required>
+            </label>
+            <label>Secure Password
+                <input type="password" name="password" required>
+            </label>
+            <button type="submit">Create Admin Account</button>
+        </form>
+    {% else %}
+        <!-- Login Form -->
+        <form hx-post="/api/auth/login" hx-target="#auth-alerts" hx-swap="innerHTML">
+            <label>Email / Username
+                <input type="text" name="username" required>
+            </label>
+            <label>Password
+                <input type="password" name="password" required>
+            </label>
+            <button type="submit">Log In</button>
+        </form>
+    {% endif %}
+</article>
+{% endblock %}
