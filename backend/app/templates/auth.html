@@ -2,17 +2,16 @@
 
 {% block content %}
 <div class="auth-wrapper">
-    <article class="auth-card">
+    <!-- Changed from <article> to <div> to remove Pico's huge margins -->
+    <div class="auth-card">
         <header>
-            <h3 style="text-align: center; margin-bottom: 0;">
-                {% if not admin_exists %}Welcome to Meraki App{% else %}Admin Login{% endif %}
-            </h3>
+            <h3>{% if not admin_exists %}Meraki Admin{% else %}Admin Login{% endif %}</h3>
         </header>
 
         <div id="auth-alerts"></div>
 
         {% if not admin_exists %}
-            <p style="text-align: center; font-size: 0.9rem; color: #aaa;">Create your master Admin account.</p>
+            <p>Create your master Admin account.</p>
             <form hx-post="/api/auth/setup" hx-target="#auth-alerts" hx-swap="innerHTML">
                 <label>Admin Email
                     <input type="email" name="username" required>
@@ -26,7 +25,7 @@
                 <button type="submit">Create Account</button>
             </form>
         {% else %}
-            <form hx-post="/api/auth/login" hx-target="#auth-alerts" hx-swap="innerHTML" style="margin-top: 1.5rem;">
+            <form hx-post="/api/auth/login" hx-target="#auth-alerts" hx-swap="innerHTML">
                 <label>Email Address
                     <input type="email" name="username" required>
                 </label>
@@ -36,6 +35,6 @@
                 <button type="submit">Log In</button>
             </form>
         {% endif %}
-    </article>
+    </div>
 </div>
 {% endblock %}
