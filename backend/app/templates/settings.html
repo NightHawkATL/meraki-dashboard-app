@@ -1,0 +1,70 @@
+{% extends "app_layout.html" %}
+
+{% block app_content %}
+<hgroup>
+    <h2>Settings</h2>
+    <p style="color: #aaa;">Manage your Meraki API Key and Integrations.</p>
+</hgroup>
+
+<div id="settings-alerts"></div>
+
+<article style="background: var(--sidebar-bg); padding: 2rem; border-radius: 8px; border: 1px solid #333; margin-bottom: 2rem;">
+    <h4>Meraki API Key</h4>
+    <p style="font-size: 0.9rem; color: #aaa;">Your key is AES-encrypted at rest and decrypted in memory during execution.</p>
+    
+    <!-- Save Key Form -->
+    <form hx-post="/api/meraki/key" hx-target="#settings-alerts" hx-swap="innerHTML" style="display: flex; gap: 1rem; align-items: flex-end;">
+        <label style="flex-grow: 1;">Cisco Meraki API Key
+            <input type="password" name="api_key" required style="margin-bottom: 0;">
+        </label>
+        <button type="submit" style="background: #1976d2; border: none; padding: 0.75rem 2rem;">Save Key</button>
+    </form>
+
+    <hr style="border-color: #333; margin: 2rem 0;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h4>Cached Meraki Data</h4>
+            <p style="font-size: 0.9rem; color: #aaa; margin-bottom: 0;">
+                Currently caching <strong>{{ orgs|length }}</strong> Organizations.
+            </p>
+        </div>
+        <!-- Sync Button -->
+        <button hx-post="/api/meraki/sync" hx-target="#settings-alerts" hx-swap="innerHTML" 
+                style="background: transparent; border: 1px solid #9c27b0; color: #9c27b0;">
+            Verify & Sync Networks
+        </button>
+    </div>
+</article>
+
+<!-- Show the Cached Data using a 2-column Grid -->
+<div class="grid">
+    <div>
+        <h5 style="color: #1976d2;">Organizations</h5>
+        <ul style="list-style: none; padding: 0;">
+            {% for org in orgs %}
+            <li style="background: var(--sidebar-bg); padding: 1rem; border: 1px solid #333; border-radius: 4px; margin-bottom: 0.5rem;">
+                <strong>{{ org.name }}</strong><br>
+                <small style="color: #aaa;">ID: {{ org.id }}</small>
+            </li>
+            {% else %}
+            <li style="color: #aaa;">No organizations synced yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div>
+        <h5 style="color: #4caf50;">Networks</h5>
+        <ul style="list-style: none; padding: 0;">
+            {% for net in networks %}
+            <li style="background: var(--sidebar-bg); padding: 1rem; border: 1px solid #333; border-radius: 4px; margin-bottom: 0.5rem;">
+                <strong>{{ net.network_name }}</strong><br>
+                <small style="color: #aaa;">Org: {{ net.org_name }}</small>
+            </li>
+            {% else %}
+            <li style="color: #aaa;">No networks synced yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
