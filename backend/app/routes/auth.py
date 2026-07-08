@@ -74,3 +74,10 @@ def login(
     # HTMX Magic: Redirect the user to the Main Dashboard
     response.headers["HX-Redirect"] = "/dashboard"
     return ""
+
+@router.post("/logout")
+def logout(response: Response):
+    """Deletes the secure cookie and redirects to the login page."""
+    response.delete_cookie("access_token")
+    response.headers["HX-Redirect"] = "/"
+    return ""
