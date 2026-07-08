@@ -1,53 +1,76 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import re
+from fastapi import APIRouter, Depends, Form, Response
 from sqlalchemy.orm import Session
-from .. import models, schemas, security
+from .. import models, security
 from ..database import get_db
-from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
-@router.post("/setup", response_model=schemas.UserResponse)
-def setup_admin(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    """Creates the initial Admin user. Fails if an admin already exists."""
+@router.post("/setup")
+def setup_admin(
+    response: Response,
+    username: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Creates the initial Admin user using HTMX Form Data."""
+    
+    # 1. Enforce Email Format securely on the backend
+    email_regex = r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    if not re.match(email_regex, username):
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Invalid email address.</article>"
+
+    # 2. Check if Passwords Match
+    if password != confirm_password:
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Passwords do not match.</article>"
+
+    # 3. Ensure no admin already exists
     admin_exists = db.query(models.User).filter(models.User.is_admin == True).first()
     if admin_exists:
-        raise HTTPException(status_code=400, detail="Admin user already exists.")
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Admin already exists.</article>"
     
-    hashed_password = security.get_password_hash(user.password)
-    new_user = models.User(
-        username=user.username,
-        password_hash=hashed_password,
-        is_admin=True
-    )
+    # Success! Save the new admin
+    hashed_password = security.get_password_hash(password)
+    new_user = models.User(username=username, password_hash=hashed_password, is_admin=True)
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)
 
-    # Initialize the Global Admin Settings row
     settings = models.AdminSettings()
     db.add(settings)
     db.commit()
 
-    return new_user
+    # HTMX Magic: Tell the browser to instantly refresh the page to show the Login screen!
+    response.headers["HX-Refresh"] = "true"
+    return ""
 
-@router.post("/login", response_model=schemas.Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    """Authenticates a user and returns a secure JWT token."""
-    # Notice we now use form_data.username instead of user.username
-    db_user = db.query(models.User).filter(models.User.username == form_data.username).first()
+
+@router.post("/login")
+def login(
+    response: Response,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Authenticates a user and sets a Secure Cookie."""
+    db_user = db.query(models.User).filter(models.User.username == username).first()
     
-    if not db_user or not security.verify_password(form_data.password, db_user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Invalid username or password"
-        )
+    if not db_user or not security.verify_password(password, db_user.password_hash):
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Invalid email or password.</article>"
     
     # Generate the JWT Token
     access_token = security.create_access_token(data={"sub": db_user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
     
-@router.get("/status")
-def get_system_status(db: Session = Depends(get_db)):
-    """Checks if the system has been initialized with an admin user."""
-    admin_exists = db.query(models.User).filter(models.User.is_admin == True).first() is not None
-    return {"admin_exists": admin_exists}
+    # Set the token as a Secure HTTP-Only Cookie (un-hackable by Javascript!)
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        samesite="lax",
+        secure=False,  # Set to True later when you have an HTTPS domain!
+        max_age=security.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+    
+    # HTMX Magic: Redirect the user to the Main Dashboard
+    response.headers["HX-Redirect"] = "/dashboard"
+    return ""
