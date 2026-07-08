@@ -34,7 +34,9 @@ def render_dashboard(
         {"id": "vlan_update", "name": "Update Guest VLANs"},
         {"id": "device_status", "name": "Get Device Status Report"}
     ]
-
+    settings_row = db.query(models.AdminSettings).first()
+    mapbox_key = settings_row.mapbox_api_key if settings_row else ""
+    
     return templates.TemplateResponse(
         "dashboard.html", 
         {
@@ -55,6 +57,9 @@ def render_settings(request: Request, db: Session = Depends(get_db), current_use
     # Get unique orgs
     unique_orgs = {item.org_id: {"id": item.org_id, "name": item.org_name} for item in cache}
     
+    settings_row = db.query(models.AdminSettings).first()
+    mapbox_key = settings_row.mapbox_api_key if settings_row else ""
+    
     return templates.TemplateResponse(
         "settings.html", 
         {
@@ -62,5 +67,6 @@ def render_settings(request: Request, db: Session = Depends(get_db), current_use
             "current_user": current_user,
             "orgs": list(unique_orgs.values()),
             "networks": cache
+            "mapbox_key": mapbox_key
         }
     )
