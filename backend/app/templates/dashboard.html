@@ -179,10 +179,22 @@
                             window.networkMarker = new mapboxgl.Marker({ color: "#1976d2" })
                                 .setLngLat([data.lng, data.lat])
                                 .addTo(window.networkMap);
+                                
+                            // Force resize once the map initially loads
+                            window.networkMap.on('load', function () {
+                                window.networkMap.resize();
+                            });
                         } else {
                             window.networkMap.setCenter([data.lng, data.lat]);
                             window.networkMarker.setLngLat([data.lng, data.lat]);
                         }
+                        
+                        // The Magic Fix: Force Mapbox to redraw its tiles after unhiding the div
+                        setTimeout(() => {
+                            if (window.networkMap) {
+                                window.networkMap.resize();
+                            }
+                        }, 150);
                     }
                 } else {
                     addressSpan.textContent = "No address configured in Meraki dashboard.";
