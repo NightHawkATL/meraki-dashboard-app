@@ -67,3 +67,16 @@ def render_settings(request: Request, db: Session = Depends(get_db), current_use
             "mapbox_key": mapbox_key
         }
     )
+
+@router.get("/history")
+def render_history(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """Renders the Recent History page."""
+    jobs = db.query(models.JobHistory).filter(models.JobHistory.user_id == current_user.id).order_by(models.JobHistory.id.desc()).all()
+    
+    # Check if we have any active jobs, so the UI knows if it should auto-refresh
+    has_running_jobs = any(job.status in ["Pending", "Running"] for job in jobs)
+
+    return templates.TemplateResponse(
+        "history.html", 
+        {"request": request, "current_user": current_user, "jobs": jobs, "has_running_jobs": has_running_jobs}
+    )
