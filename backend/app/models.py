@@ -14,8 +14,6 @@ class User(Base):
     two_factor_secret = Column(String, nullable=True)
     meraki_api_key_encrypted = Column(String, nullable=True)
 
-    # Relationships map the user to their cached networks and history
-    networks = relationship("MerakiNetworkCache", back_populates="owner")
     jobs = relationship("JobHistory", back_populates="owner")
 
 class AdminSettings(Base):
