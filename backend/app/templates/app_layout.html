@@ -3,11 +3,20 @@
 {% block content %}
 <nav class="app-topbar">
     <div>
-        <h4 style="margin: 0; color: #fff;">Meraki Dashboard App</h4>
+        <h4 style="margin: 0; color: var(--text-primary);">Meraki Dashboard App</h4>
     </div>
-    <div style="display: flex; align-items: center; gap: 16px;">
-        <span class="material-symbols-outlined" style="cursor: pointer; color: #aaa;">light_mode</span>
-        <span class="material-symbols-outlined" style="cursor: pointer; color: #aaa;">dark_mode</span>
+    
+    <!-- FUNCTIONAL THEME TOGGLE BUTTONS -->
+    <div style="display: flex; gap: 4px; padding: 4px; border-radius: 8px; border: 1px solid var(--border-light); background: var(--input-bg);">
+        <button class="theme-btn" id="theme-light" onclick="setTheme('light')" title="Light Mode">
+            <span class="material-symbols-outlined" style="font-size: 18px;">light_mode</span>
+        </button>
+        <button class="theme-btn" id="theme-system" onclick="setTheme('system')" title="System Theme">
+            <span class="material-symbols-outlined" style="font-size: 18px;">desktop_windows</span>
+        </button>
+        <button class="theme-btn" id="theme-dark" onclick="setTheme('dark')" title="Dark Mode">
+            <span class="material-symbols-outlined" style="font-size: 18px;">dark_mode</span>
+        </button>
     </div>
 </nav>
 
@@ -32,7 +41,7 @@
     </ul>
 
     <ul>
-        <li style="padding: 0 24px; color: #888; font-size: 0.8rem; margin-bottom: 8px;">
+        <li style="padding: 0 24px; color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 8px;">
             User: {{ current_user.username.split('@')[0] }}
         </li>
         <li>
