@@ -162,7 +162,11 @@
             document.getElementById('hiddenScriptId').value = scriptSel.value;
             document.getElementById('hiddenOrgId').value = orgSel.value;
             document.getElementById('hiddenNetworkId').value = netSel.value;
-
+            
+            // --- FETCH THE DYNAMIC FORM REQUIREMENTS ---
+            document.getElementById('dynamicFormContainer').innerHTML = "<div style='color:#aaa; font-size:0.85rem; margin-bottom: 16px;'>Fetching script variables...</div>";
+            htmx.ajax('GET', `/api/scripts/build-form?script_id=${scriptSel.value}&network_id=${netSel.value}`, {target: '#dynamicFormContainer'});
+            
             // --- MAPBOX DYNAMIC FETCHING ---
             try {
                 const response = await fetch(`/api/meraki/network/${netSel.value}/location`);
