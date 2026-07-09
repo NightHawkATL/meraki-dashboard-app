@@ -9,9 +9,9 @@
 <div class="mui-paper">
 <!-- TABS -->
     <div class="mui-tabs">
-        <div class="mui-tab active" onclick="switchTab('tab-profile', this)">Profile & Security</div>
-        <div class="mui-tab" onclick="switchTab('tab-meraki', this)">Meraki Integration</div>
-        <div class="mui-tab" onclick="switchTab('tab-system', this)">System (Admin)</div>
+        <div id="nav-tab-profile" class="mui-tab active" onclick="switchTab('tab-profile', this)">Profile & Security</div>
+        <div id="nav-tab-meraki" class="mui-tab" onclick="switchTab('tab-meraki', this)">Meraki Integration</div>
+        <div id="nav-tab-system" class="mui-tab" onclick="switchTab('tab-system', this)">System (Admin)</div>
     </div>
 
     <!-- TAB 1: PROFILE -->
@@ -104,11 +104,24 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Restore Active Tab
+        const savedTab = localStorage.getItem('activeSettingsTab') || 'tab-profile';
+        const tabElement = document.getElementById('nav-' + savedTab);
+        if (tabElement) {
+            switchTab(savedTab, tabElement);
+        }
+    });
+
     function switchTab(tabId, tabElement) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.mui-tab').forEach(el => el.classList.remove('active'));
+        
         document.getElementById(tabId).classList.add('active');
         tabElement.classList.add('active');
+        
+        // Save choice so it survives page reloads!
+        localStorage.setItem('activeSettingsTab', tabId);
     }
 
     function selectOrg(orgId, element) {
@@ -117,17 +130,6 @@
         document.getElementById('network-placeholder').style.display = 'none';
         document.querySelectorAll('.network-item').forEach(el => el.style.display = 'none');
         document.querySelectorAll('.org-' + orgId).forEach(el => el.style.display = 'block');
-    }
-// Set the dropdown to match the current scale
-    document.addEventListener("DOMContentLoaded", () => {
-        const currentScale = localStorage.getItem('uiScale') || '14px';
-        const select = document.getElementById('uiScaleSelect');
-        if(select) select.value = currentScale;
-    });
-
-    function changeUiScale(val) {
-        document.documentElement.style.setProperty('font-size', val, 'important');
-        localStorage.setItem('uiScale', val);
     }
 </script>
 {% endblock %}
