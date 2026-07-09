@@ -25,9 +25,9 @@ def sync_meraki_data(
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(deps.get_current_user)
 ):
-    """Logs into Meraki, fetches Orgs and Networks, and caches them."""
+    """Logs into Meraki, upserts Orgs/Networks into Global Inventory, and maps access."""
     if not current_user.meraki_api_key_encrypted:
-        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>No API key found. Please save one first.</article>"
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>No API key found.</article>"
     
     api_key = security.decrypt_api_key(current_user.meraki_api_key_encrypted)
     
@@ -35,24 +35,28 @@ def sync_meraki_data(
         dashboard = meraki.DashboardAPI(api_key=api_key, print_console=False, suppress_logging=True)
         orgs = dashboard.organizations.getOrganizations()
         
-        db.query(models.MerakiNetworkCache).filter(models.MerakiNetworkCache.user_id == current_user.id).delete()
-        new_cache_entries = []
+        # Clear out this specific user's old access map
+        db.query(models.UserOrgAccess).filter(models.UserOrgAccess.user_id == current_user.id).delete()
+        
+        network_count = 0
         
         for org in orgs:
+            # 1. Upsert Organization to Global List
+            db.merge(models.MerakiOrganization(id=org['id'], name=org['name']))
+            
+            # 2. Grant this user access to this Org
+            db.merge(models.UserOrgAccess(user_id=current_user.id, org_id=org['id']))
+            
+            # 3. Fetch and Upsert Networks to Global List
             try:
                 networks = dashboard.organizations.getOrganizationNetworks(org['id'])
                 for net in networks:
-                    new_cache_entries.append(models.MerakiNetworkCache(
-                        user_id=current_user.id, org_id=org['id'], org_name=org['name'], 
-                        network_id=net['id'], network_name=net['name']
-                    ))
+                    db.merge(models.MerakiNetwork(id=net['id'], org_id=org['id'], name=net['name']))
+                    network_count += 1
             except meraki.APIError:
                 continue
         
-        if new_cache_entries:
-            db.bulk_save_objects(new_cache_entries)
         db.commit()
-        
         response.headers["HX-Refresh"] = "true"
         return ""
     
