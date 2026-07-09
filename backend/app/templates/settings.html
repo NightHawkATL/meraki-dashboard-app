@@ -7,8 +7,9 @@
 </hgroup>
 
 <div class="mui-paper">
-<!-- TABS -->
+    <!-- TABS -->
     <div class="mui-tabs">
+        <!-- The IDs are back! -->
         <div id="nav-tab-profile" class="mui-tab active" onclick="switchTab('tab-profile', this)">Profile & Security</div>
         <div id="nav-tab-meraki" class="mui-tab" onclick="switchTab('tab-meraki', this)">Meraki Integration</div>
         <div id="nav-tab-system" class="mui-tab" onclick="switchTab('tab-system', this)">System (Admin)</div>
@@ -33,7 +34,7 @@
     </div>
 
     <!-- TAB 2: MERAKI INTEGRATION -->
-    <div id="tab-meraki" class="tab-content"> <!-- Remove 'active' from here -->
+    <div id="tab-meraki" class="tab-content">
         <div id="settings-alerts"></div>
 
         <h5 style="margin-bottom: 8px;">Meraki API Key</h5>
@@ -95,7 +96,6 @@
         
         <form hx-post="/api/admin/mapbox" hx-target="#admin-alerts" hx-swap="innerHTML" style="display: flex; gap: 12px; align-items: stretch; max-width: 600px;">
             <div style="flex-grow: 1;">
-                <!-- Changed type to "password" to mask the key! -->
                 <input type="password" name="mapbox_key" class="mui-input" style="width: 100%;" placeholder="pk.eyJ1..." value="{{ mapbox_key }}" required>
             </div>
             <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Mapbox Key</button>
@@ -105,13 +105,23 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // Restore Active Tab or default to Profile
+        // Restore UI Scale
+        const currentScale = localStorage.getItem('uiScale') || '14px';
+        const select = document.getElementById('uiScaleSelect');
+        if(select) select.value = currentScale;
+
+        // Restore Active Tab
         const savedTab = localStorage.getItem('activeSettingsTab') || 'tab-profile';
         const tabElement = document.getElementById('nav-' + savedTab);
         if (tabElement) {
             switchTab(savedTab, tabElement);
         }
     });
+
+    function changeUiScale(val) {
+        document.documentElement.style.setProperty('font-size', val, 'important');
+        localStorage.setItem('uiScale', val);
+    }
 
     function switchTab(tabId, tabElement) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -120,7 +130,6 @@
         document.getElementById(tabId).classList.add('active');
         tabElement.classList.add('active');
         
-        // Save choice so it survives the HTMX Sync page refresh!
         localStorage.setItem('activeSettingsTab', tabId);
     }
 
