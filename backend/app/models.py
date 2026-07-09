@@ -35,18 +35,32 @@ class AdminSettings(Base):
     pwd_require_lower = Column(Boolean, default=True)
     pwd_require_number = Column(Boolean, default=True)
 
-class MerakiNetworkCache(Base):
-    __tablename__ = "meraki_network_cache"
+class MerakiOrganization(Base):
+    __tablename__ = "meraki_organizations"
+    id = Column(String, primary_key=True, index=True)
+    name = Column(String)
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    org_id = Column(String, index=True)
-    org_name = Column(String)
-    network_id = Column(String, index=True)
-    network_name = Column(String)
-    last_synced = Column(DateTime(timezone=True), server_default=func.now())
+class MerakiNetwork(Base):
+    __tablename__ = "meraki_networks"
+    id = Column(String, primary_key=True, index=True)
+    org_id = Column(String, ForeignKey("meraki_organizations.id"))
+    name = Column(String)
 
-    owner = relationship("User", back_populates="networks")
+class MerakiDevice(Base):
+    __tablename__ = "meraki_devices"
+    serial = Column(String, primary_key=True, index=True)
+    network_id = Column(String, ForeignKey("meraki_networks.id"))
+    name = Column(String, nullable=True)
+    mac = Column(String, nullable=True)
+    model = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    lat = Column(Float, nullable=True)  # <--- Make sure you import Float at the top of models.py!
+    lng = Column(Float, nullable=True)
+
+class UserOrgAccess(Base):
+    __tablename__ = "user_org_access"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    org_id = Column(String, ForeignKey("meraki_organizations.id"), primary_key=True)
 
 class JobHistory(Base):
     __tablename__ = "job_history"
