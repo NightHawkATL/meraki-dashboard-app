@@ -38,25 +38,26 @@ def sync_meraki_data(
         # Clear out this specific user's old access map
         db.query(models.UserOrgAccess).filter(models.UserOrgAccess.user_id == current_user.id).delete()
         
-        network_count = 0
-        
         for org in orgs:
+            org_id_str = str(org['id'])
+            
             # 1. Upsert Organization to Global List
-            db.merge(models.MerakiOrganization(id=org['id'], name=org['name']))
+            db.merge(models.MerakiOrganization(id=org_id_str, name=org['name']))
+            db.flush() # Force Postgres to create the Org immediately!
             
             # 2. Grant this user access to this Org
-            db.merge(models.UserOrgAccess(user_id=current_user.id, org_id=org['id']))
+            db.merge(models.UserOrgAccess(user_id=current_user.id, org_id=org_id_str))
             
             # 3. Fetch and Upsert Networks to Global List
             try:
                 networks = dashboard.organizations.getOrganizationNetworks(org['id'])
                 for net in networks:
-                    db.merge(models.MerakiNetwork(id=net['id'], org_id=org['id'], name=net['name']))
-                    network_count += 1
+                    db.merge(models.MerakiNetwork(id=str(net['id']), org_id=org_id_str, name=net['name']))
+                db.flush()
             except meraki.APIError:
                 continue
         
-        db.commit()
+        db.commit() # Finalize the entire transaction
         response.headers["HX-Refresh"] = "true"
         return ""
     
