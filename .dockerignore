@@ -1,0 +1,11 @@
+.git/
+.github/
+data/
+__pycache__/
+*.pyc
+.env
+.drone.yml
+.gitea/
+ci/
+renovate.json
+.gitignore
