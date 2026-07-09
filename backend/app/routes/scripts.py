@@ -84,8 +84,8 @@ def get_progress(job_id: int, request: Request, db: Session = Depends(get_db), c
 def retry_job(job_id: int, response: Response, db: Session = Depends(get_db), current_user: models.User = Depends(deps.get_current_user)):
     """Duplicates a failed job and runs it again."""
     old_job = db.query(models.JobHistory).filter(models.JobHistory.id == job_id).first()
-    cache_entry = db.query(models.MerakiNetworkCache).filter(models.MerakiNetworkCache.network_id == old_job.target_network_id).first()
-    org_id = cache_entry.org_id if cache_entry else "unknown"
+    net_entry = db.query(models.MerakiNetwork).filter(models.MerakiNetwork.id == old_job.target_network_id).first()
+    org_id = net_entry.org_id if net_entry else "unknown"
 
     new_job = models.JobHistory(
         user_id=current_user.id, script_name=old_job.script_name,
