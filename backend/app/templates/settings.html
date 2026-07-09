@@ -105,7 +105,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // Restore Active Tab
+        // Restore Active Tab or default to Profile
         const savedTab = localStorage.getItem('activeSettingsTab') || 'tab-profile';
         const tabElement = document.getElementById('nav-' + savedTab);
         if (tabElement) {
@@ -120,7 +120,7 @@
         document.getElementById(tabId).classList.add('active');
         tabElement.classList.add('active');
         
-        // Save choice so it survives page reloads!
+        // Save choice so it survives the HTMX Sync page refresh!
         localStorage.setItem('activeSettingsTab', tabId);
     }
 
