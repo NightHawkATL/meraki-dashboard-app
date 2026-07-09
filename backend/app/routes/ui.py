@@ -24,8 +24,17 @@ def render_dashboard(
     current_user: models.User = Depends(get_current_user) 
 ):
     """Renders the main layout with cached networks for script execution."""
-    cache = db.query(models.MerakiNetworkCache).filter(models.MerakiNetworkCache.user_id == current_user.id).all()
-    unique_orgs = {item.org_id: {"id": item.org_id, "name": item.org_name} for item in cache}
+    # Find all Orgs this user is allowed to see
+    access_records = db.query(models.UserOrgAccess).filter(models.UserOrgAccess.user_id == current_user.id).all()
+    org_ids = [acc.org_id for acc in access_records]
+    
+    # Query the Global Tables for those specific Orgs and Networks
+    orgs = db.query(models.MerakiOrganization).filter(models.MerakiOrganization.id.in_(org_ids)).all()
+    networks = db.query(models.MerakiNetwork).filter(models.MerakiNetwork.org_id.in_(org_ids)).all()
+
+    # Map them to dictionaries so our HTML templates still work perfectly without modifications!
+    unique_orgs = {org.id: {"id": org.id, "name": org.name} for org in orgs}
+    mapped_networks = [{"network_id": net.id, "org_id": net.org_id, "network_name": net.name} for net in networks]
     
     scripts = [
         {"id": "port_bounce", "name": "Bounce Switch Ports"},
@@ -51,8 +60,17 @@ def render_dashboard(
 @router.get("/settings")
 def render_settings(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """Renders the settings page with live Meraki cache data."""
-    cache = db.query(models.MerakiNetworkCache).filter(models.MerakiNetworkCache.user_id == current_user.id).all()
-    unique_orgs = {item.org_id: {"id": item.org_id, "name": item.org_name} for item in cache}
+    # Find all Orgs this user is allowed to see
+    access_records = db.query(models.UserOrgAccess).filter(models.UserOrgAccess.user_id == current_user.id).all()
+    org_ids = [acc.org_id for acc in access_records]
+    
+    # Query the Global Tables for those specific Orgs and Networks
+    orgs = db.query(models.MerakiOrganization).filter(models.MerakiOrganization.id.in_(org_ids)).all()
+    networks = db.query(models.MerakiNetwork).filter(models.MerakiNetwork.org_id.in_(org_ids)).all()
+
+    # Map them to dictionaries so our HTML templates still work perfectly without modifications!
+    unique_orgs = {org.id: {"id": org.id, "name": org.name} for org in orgs}
+    mapped_networks = [{"network_id": net.id, "org_id": net.org_id, "network_name": net.name} for net in networks]
     
     settings_row = db.query(models.AdminSettings).first()
     mapbox_key = settings_row.mapbox_api_key if settings_row and settings_row.mapbox_api_key else ""
