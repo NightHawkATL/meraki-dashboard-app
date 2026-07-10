@@ -98,6 +98,7 @@ def reset_user_password(
 
 @router.post("/policy", response_class=HTMLResponse)
 def update_password_policy(
+    require_2fa_all_users: bool = Form(False),
     pwd_min_length: int = Form(12),
     pwd_require_special: bool = Form(False),
     pwd_require_upper: bool = Form(False),
@@ -119,6 +120,7 @@ def update_password_policy(
     settings.pwd_require_upper = pwd_require_upper
     settings.pwd_require_lower = pwd_require_lower
     settings.pwd_require_number = pwd_require_number
+    settings.require_2fa_all_users = require_2fa_all_users
     db.commit()
 
     return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Password policy updated successfully.</article>"

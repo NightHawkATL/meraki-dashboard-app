@@ -12,6 +12,8 @@ templates = Jinja2Templates(directory="app/templates")
 def render_home_or_login(request: Request, db: Session = Depends(get_db)):
     """Checks the database and serves the correct HTML page."""
     admin_exists = db.query(models.User).filter(models.User.is_admin == True).first() is not None
+    # Enforce 2FA strictly before letting them move on
+    settings = db.query(models.AdminSettings).first()
     return templates.TemplateResponse("auth.html", {"request": request, "admin_exists": admin_exists})
 
 @router.get("/dashboard")
@@ -46,6 +48,17 @@ def render_dashboard(
     settings_row = db.query(models.AdminSettings).first()
     mapbox_key = settings_row.mapbox_api_key if settings_row and settings_row.mapbox_api_key else ""
 
+    if settings_row and settings_row.require_2fa_all_users and not current_user.two_factor_enabled:
+        return templates.TemplateResponse("settings.html", {
+            "request": request,
+            "current_user": current_user,
+            "orgs": list(unique_orgs.values()),
+            "networks": mapped_networks,
+            "mapbox_key": mapbox_key,
+            "all_users": all_users,
+            "admin_settings": settings_row,
+            "error": "Two-Factor Authentication is globally required. Please configure it now."
+        })
     return templates.TemplateResponse(
         "dashboard.html", 
         {
