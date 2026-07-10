@@ -146,9 +146,14 @@ def search_users(
         role = "Admin" if u.is_admin else "User"
         html += f"""
         <tr>
+            <td style="padding: 8px;"><input type="checkbox" name="usernames" value="{u.username}" class="user-select-checkbox"></td>
             <td>{u.username}</td>
             <td>{role}</td>
             <td>
+                <form hx-post="/api/admin/users/delete" hx-target="#user-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete {u.username}?" style="margin: 0; padding: 0; display: inline-block;">
+                    <input type="hidden" name="usernames" value="{u.username}">
+                    <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #c62828; border: none; margin-right: 4px;">Delete</button>
+                </form>
                 <form hx-post="/api/admin/users/reset" hx-target="#user-alerts" hx-swap="innerHTML" style="margin: 0; padding: 0;">
                     <input type="hidden" name="username" value="{u.username}">
                     <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #e53935; border: none;">Reset Pwd</button>
@@ -157,3 +162,36 @@ def search_users(
         </tr>
         """
     return html
+@router.post("/users/delete", response_class=HTMLResponse)
+def delete_users(
+    usernames: list[str] = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    """Deletes one or more users."""
+    if not current_user.is_admin:
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; border-radius: 4px;'>Unauthorized.</article>"
+
+    # Prevent admin from deleting themselves
+    if current_user.username in usernames:
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>You cannot delete your own account.</article>"
+
+    users_to_delete = db.query(models.User).filter(models.User.username.in_(usernames)).all()
+    
+    if not users_to_delete:
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>No matching users found to delete.</article>"
+
+    count = len(users_to_delete)
+    for user in users_to_delete:
+        # Delete dependencies first (UserOrgAccess and JobHistory)
+        db.query(models.UserOrgAccess).filter(models.UserOrgAccess.user_id == user.id).delete()
+        db.query(models.JobHistory).filter(models.JobHistory.user_id == user.id).delete()
+        db.delete(user)
+        
+    db.commit()
+
+    # Trigger a refresh of the user table by returning an out-of-band swap, plus the alert
+    return f"""
+    <script>document.getElementById("user-search-input").dispatchEvent(new Event("keyup"));</script>
+    <article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Successfully deleted {count} user(s).</article>
+    """
