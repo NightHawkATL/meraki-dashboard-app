@@ -12,9 +12,11 @@
         <!-- The IDs are back! -->
         <div id="nav-tab-profile" class="mui-tab active" onclick="switchTab('tab-profile', this)">Profile & Security</div>
         <div id="nav-tab-meraki" class="mui-tab" onclick="switchTab('tab-meraki', this)">Meraki Integration</div>
+        
         {% if current_user.is_admin %}
         <div id="nav-tab-system" class="mui-tab" onclick="switchTab('tab-system', this)">System (Admin)</div>
         {% endif %}
+        
     </div>
 
     <!-- TAB 1: PROFILE -->
@@ -96,10 +98,11 @@
         </div>
     </div>
 
-    {% if current_user.is_admin %}
+    
     <!-- TAB 3: SYSTEM -->
+    {% if current_user.is_admin %}
     <div id="tab-system" class="tab-content">
-{% if current_user.is_admin %}
+
         <div id="admin-alerts"></div>
         <h5 style="margin-bottom: 8px;">Mapbox Integration</h5>
         <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
@@ -128,8 +131,9 @@
                 <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Create User</button>
             </div>
         </form>
-    {% endif %}
+    
     </div>
+    {% endif %}
 </div>
 
 <script>
