@@ -34,6 +34,35 @@
         <hr style="border-color: #333; margin: 24px 0;">
 
         <div id="password-alerts"></div>
+        <div id="two-factor-alerts"></div>
+        <h5 style="margin-bottom: 8px;">Two-Factor Authentication</h5>
+        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 16px;">
+            {% if current_user.two_factor_enabled %}
+                <span style="color: #4caf50;">✅ Enabled.</span> Your account is protected by an Authenticator app.
+                {% if admin_settings and admin_settings.require_2fa_all_users and not current_user.is_admin %}
+                    <br><span style="color: #e53935;">(Required by Administrator)</span>
+                {% endif %}
+            {% else %}
+                <span style="color: #e53935;">❌ Disabled.</span> We strongly recommend enabling 2FA.
+                {% if admin_settings and admin_settings.require_2fa_all_users %}
+                    <br><strong style="color: #e53935;">Warning: Your administrator has required 2FA. You must enable it to continue using the platform.</strong>
+                {% endif %}
+            {% endif %}
+        </p>
+        <div id="two-factor-setup-area" style="margin-bottom: 32px;">
+            {% if current_user.two_factor_enabled %}
+                {% if not (admin_settings and admin_settings.require_2fa_all_users and not current_user.is_admin) %}
+                <form hx-post="/api/auth/2fa/disable" hx-target="#two-factor-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to disable 2FA?">
+                    <button type="submit" class="mui-btn" style="background: #e53935; border: none; color: white;">Disable 2FA</button>
+                </form>
+                {% endif %}
+            {% else %}
+                <button class="mui-btn" style="background: #1976d2; border: none; color: white;" hx-get="/api/auth/2fa/setup" hx-target="#two-factor-setup-area" hx-swap="innerHTML">Begin Setup</button>
+            {% endif %}
+        </div>
+        
+        <hr style="border-color: #333; margin: 24px 0;">
+
         <h5 style="margin-bottom: 8px;">Change Password</h5>
         <form hx-post="/api/auth/password" hx-target="#password-alerts" hx-swap="innerHTML" style="max-width: 600px;">
             <div style="margin-bottom: 16px;">
@@ -190,6 +219,7 @@
                     <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_upper" value="true" {% if not admin_settings or admin_settings.pwd_require_upper %}checked{% endif %}> Require Uppercase</label>
                     <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_lower" value="true" {% if not admin_settings or admin_settings.pwd_require_lower %}checked{% endif %}> Require Lowercase</label>
                     <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_number" value="true" {% if not admin_settings or admin_settings.pwd_require_number %}checked{% endif %}> Require Numeric</label>
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="require_2fa_all_users" value="true" {% if admin_settings and admin_settings.require_2fa_all_users %}checked{% endif %}> <strong style="color: #ff9800;">Require 2FA globally</strong></label>
                 </div>
                 <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Policies</button>
             </div>
