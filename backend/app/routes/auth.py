@@ -1,3 +1,4 @@
+from .. import deps
 import re
 from fastapi import APIRouter, Depends, Form, Response
 from sqlalchemy.orm import Session
@@ -81,3 +82,26 @@ def logout(response: Response):
     response.delete_cookie("access_token")
     response.headers["HX-Redirect"] = "/"
     return ""
+@router.post("/password")
+def change_password(
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_new_password: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    """Changes the current user's password."""
+    if not security.verify_password(current_password, current_user.password_hash):
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Current password is incorrect.</article>"
+    
+    if new_password != confirm_new_password:
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>New passwords do not match.</article>"
+    
+    # We should really check password requirements here, but let's implement the basic change for now
+    if len(new_password) < 8:
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Password must be at least 8 characters long.</article>"
+
+    current_user.password_hash = security.get_password_hash(new_password)
+    db.commit()
+
+    return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Password changed successfully.</article>"
