@@ -12,7 +12,9 @@
         <!-- The IDs are back! -->
         <div id="nav-tab-profile" class="mui-tab active" onclick="switchTab('tab-profile', this)">Profile & Security</div>
         <div id="nav-tab-meraki" class="mui-tab" onclick="switchTab('tab-meraki', this)">Meraki Integration</div>
+        {% if current_user.is_admin %}
         <div id="nav-tab-system" class="mui-tab" onclick="switchTab('tab-system', this)">System (Admin)</div>
+        {% endif %}
     </div>
 
     <!-- TAB 1: PROFILE -->
@@ -29,8 +31,16 @@
 
         <hr style="border-color: #333; margin: 24px 0;">
 
+        <div id="password-alerts"></div>
         <h5 style="margin-bottom: 8px;">Change Password</h5>
-        <p style="color: #aaa; font-size: 0.85rem;">Password management coming soon.</p>
+        <form hx-post="/api/auth/password" hx-target="#password-alerts" hx-swap="innerHTML" style="max-width: 600px;">
+            <div style="margin-bottom: 16px;">
+                <input type="password" name="current_password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Current Password" required>
+                <input type="password" name="new_password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="New Password" required minlength="8">
+                <input type="password" name="confirm_new_password" class="mui-input" style="width: 100%; margin-bottom: 16px;" placeholder="Confirm New Password" required minlength="8">
+                <button type="submit" class="mui-btn" style="background: #e53935; border: none; color: white;">Change Password</button>
+            </div>
+        </form>
     </div>
 
     <!-- TAB 2: MERAKI INTEGRATION -->
@@ -86,8 +96,10 @@
         </div>
     </div>
 
+    {% if current_user.is_admin %}
     <!-- TAB 3: SYSTEM -->
     <div id="tab-system" class="tab-content">
+{% if current_user.is_admin %}
         <div id="admin-alerts"></div>
         <h5 style="margin-bottom: 8px;">Mapbox Integration</h5>
         <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
@@ -100,6 +112,23 @@
             </div>
             <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Mapbox Key</button>
         </form>
+        <hr style="border-color: #333; margin: 24px 0;">
+        <h5 style="margin-bottom: 8px;">User Management</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Create new dashboard users.
+        </p>
+        <div id="user-alerts"></div>
+        <form hx-post="/api/admin/users" hx-target="#user-alerts" hx-swap="innerHTML" style="max-width: 600px;">
+            <div style="margin-bottom: 16px;">
+                <input type="email" name="username" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Email / Username" required>
+                <input type="password" name="password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Temporary Password" required minlength="8">
+                <div style="margin-bottom: 16px; color: #e0e0e0;">
+                    <label><input type="checkbox" name="is_admin" value="true"> Admin User</label>
+                </div>
+                <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Create User</button>
+            </div>
+        </form>
+    {% endif %}
     </div>
 </div>
 
