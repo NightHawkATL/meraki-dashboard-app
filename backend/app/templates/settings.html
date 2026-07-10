@@ -131,6 +131,58 @@
                 <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Create User</button>
             </div>
         </form>
+        <hr style="border-color: #333; margin: 24px 0;">
+        <h5 style="margin-bottom: 8px;">Find Users</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Search for registered users and reset passwords (max 20 records).
+        </p>
+        <input type="text" class="mui-input" style="width: 100%; max-width: 600px; margin-bottom: 16px;" placeholder="Search users by email..." 
+               name="query" hx-post="/api/admin/users/search" hx-trigger="keyup changed delay:500ms" hx-target="#user-results-table">
+        <table style="width: 100%; max-width: 600px; border-collapse: collapse; margin-bottom: 24px;">
+            <thead>
+                <tr style="border-bottom: 1px solid #333; text-align: left;">
+                    <th style="padding: 8px;">Username</th>
+                    <th style="padding: 8px;">Role</th>
+                    <th style="padding: 8px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="user-results-table">
+                {% for u in all_users %}
+                <tr>
+                    <td style="padding: 8px;">{{ u.username }}</td>
+                    <td style="padding: 8px;">{% if u.is_admin %}Admin{% else %}User{% endif %}</td>
+                    <td style="padding: 8px;">
+                        <form hx-post="/api/admin/users/reset" hx-target="#user-alerts" hx-swap="innerHTML" style="margin: 0; padding: 0;">
+                            <input type="hidden" name="username" value="{{ u.username }}">
+                            <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #e53935; border: none;">Reset Pwd</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <hr style="border-color: #333; margin: 24px 0;">
+        <h5 style="margin-bottom: 8px;">Password Policies</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Set minimum requirements for user passwords globally.
+        </p>
+        <div id="policy-alerts"></div>
+        <form hx-post="/api/admin/policy" hx-target="#policy-alerts" hx-swap="innerHTML" style="max-width: 600px;">
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; color: #aaa; font-size: 0.85rem; margin-bottom: 4px;">Min Length (<span id="lenLabel">{% if admin_settings %}{{ admin_settings.pwd_min_length }}{% else %}12{% endif %}</span>)</label>
+                <input type="range" name="pwd_min_length" min="8" max="32" value="{% if admin_settings %}{{ admin_settings.pwd_min_length }}{% else %}12{% endif %}" 
+                       oninput="document.getElementById('lenLabel').innerText = this.value" style="width: 100%; margin-bottom: 16px;">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_special" value="true" {% if not admin_settings or admin_settings.pwd_require_special %}checked{% endif %}> Require Special (!@#)</label>
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_upper" value="true" {% if not admin_settings or admin_settings.pwd_require_upper %}checked{% endif %}> Require Uppercase</label>
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_lower" value="true" {% if not admin_settings or admin_settings.pwd_require_lower %}checked{% endif %}> Require Lowercase</label>
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_number" value="true" {% if not admin_settings or admin_settings.pwd_require_number %}checked{% endif %}> Require Numeric</label>
+                </div>
+                <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Policies</button>
+            </div>
+        </form>
     
     </div>
     {% endif %}

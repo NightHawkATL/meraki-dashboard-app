@@ -40,6 +40,9 @@ def render_dashboard(
         {"id": "device_status", "name": "Get Device Status Report"}
     ]
 
+    all_users = []
+    if current_user.is_admin:
+        all_users = db.query(models.User).limit(20).all()
     settings_row = db.query(models.AdminSettings).first()
     mapbox_key = settings_row.mapbox_api_key if settings_row and settings_row.mapbox_api_key else ""
 
@@ -51,7 +54,9 @@ def render_dashboard(
             "scripts": scripts,
             "orgs": list(unique_orgs.values()),
             "networks": mapped_networks,   # <--- FIX: Using mapped_networks instead of cache!
-            "mapbox_key": mapbox_key
+            "mapbox_key": mapbox_key,
+            "admin_settings": settings_row,
+            "all_users": all_users
         }
     )
 
@@ -69,6 +74,9 @@ def render_settings(request: Request, db: Session = Depends(get_db), current_use
     unique_orgs = {org.id: {"id": org.id, "name": org.name} for org in orgs}
     mapped_networks = [{"network_id": net.id, "org_id": net.org_id, "network_name": net.name} for net in networks]
     
+    all_users = []
+    if current_user.is_admin:
+        all_users = db.query(models.User).limit(20).all()
     settings_row = db.query(models.AdminSettings).first()
     mapbox_key = settings_row.mapbox_api_key if settings_row and settings_row.mapbox_api_key else ""
 
@@ -79,7 +87,9 @@ def render_settings(request: Request, db: Session = Depends(get_db), current_use
             "current_user": current_user,
             "orgs": list(unique_orgs.values()),
             "networks": mapped_networks,   # <--- FIX: Using mapped_networks instead of cache!
-            "mapbox_key": mapbox_key
+            "mapbox_key": mapbox_key,
+            "admin_settings": settings_row,
+            "all_users": all_users
         }
     )
 
