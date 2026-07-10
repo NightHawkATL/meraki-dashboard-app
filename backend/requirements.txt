@@ -13,4 +13,6 @@ pydantic-settings==2.2.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==3.2.2
-python-multipart==0.0.9pyotp==2.9.0\nqrcode==7.4.2
+python-multipart==0.0.9
+pyotp==2.9.0
+qrcode==7.4.2
