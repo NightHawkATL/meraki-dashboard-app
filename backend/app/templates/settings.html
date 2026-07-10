@@ -140,12 +140,12 @@
                id="user-search-input" name="query" hx-post="/api/admin/users/search" hx-trigger="keyup changed delay:500ms" hx-target="#user-results-table">
         <form id="bulk-delete-form" hx-post="/api/admin/users/delete" hx-target="#user-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete the selected users?">
             <div style="margin-bottom: 8px;">
-                <button type="submit" class="mui-btn" style="background: #c62828; border: none; color: white; padding: 4px 12px; font-size: 0.85rem;">Delete Selected</button>
+                <button type="submit" id="bulk-delete-btn" class="mui-btn" style="background: #c62828; border: none; color: white; padding: 4px 12px; font-size: 0.85rem; display: none;">Delete Selected</button>
             </div>
         <table style="width: 100%; max-width: 600px; border-collapse: collapse; margin-bottom: 24px;">
             <thead>
                 <tr style="border-bottom: 1px solid #333; text-align: left;">
-                    <th style="padding: 8px; width: 40px;"><input type="checkbox" onclick="document.querySelectorAll('.user-select-checkbox').forEach(cb => cb.checked = this.checked)"></th>
+                    <th style="padding: 8px; width: 40px;"><input type="checkbox" onclick="toggleAllCheckboxes(this)"></th>
                     <th style="padding: 8px;">Username</th>
                     <th style="padding: 8px;">Role</th>
                     <th style="padding: 8px;">Actions</th>
@@ -154,17 +154,17 @@
             <tbody id="user-results-table">
                 {% for u in all_users %}
                 <tr>
-                    <td style="padding: 8px;"><input type="checkbox" name="usernames" value="{{ u.username }}" class="user-select-checkbox"></td>
+                    <td style="padding: 8px;"><input type="checkbox" name="usernames" value="{{ u.username }}" class="user-select-checkbox" onchange="toggleBulkDeleteButton()"></td>
                     <td style="padding: 8px;">{{ u.username }}</td>
                     <td style="padding: 8px;">{% if u.is_admin %}Admin{% else %}User{% endif %}</td>
                     <td style="padding: 8px;">
                         <form hx-post="/api/admin/users/delete" hx-target="#user-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete {{ u.username }}?" style="margin: 0; padding: 0; display: inline-block; margin-right: 4px;">
                             <input type="hidden" name="usernames" value="{{ u.username }}">
-                            <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #c62828; border: none;">Delete</button>
+                            <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #c62828; border: none; color: white;">Delete</button>
                         </form>
-                        <form hx-post="/api/admin/users/reset" hx-target="#user-alerts" hx-swap="innerHTML" style="margin: 0; padding: 0;">
+                        <form hx-post="/api/admin/users/reset" style="display: inline-block; margin: 0; padding: 0;"  hx-target="#user-alerts" hx-swap="innerHTML" style="margin: 0; padding: 0;">
                             <input type="hidden" name="username" value="{{ u.username }}">
-                            <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #e53935; border: none;">Reset Pwd</button>
+                            <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #ff9800; border: none; color: white; display: inline-block;">Reset Pwd</button>
                         </form>
                     </td>
                 </tr>
@@ -235,6 +235,22 @@
         document.getElementById('network-placeholder').style.display = 'none';
         document.querySelectorAll('.network-item').forEach(el => el.style.display = 'none');
         document.querySelectorAll('.org-' + orgId).forEach(el => el.style.display = 'block');
+    }
+    function toggleBulkDeleteButton() {
+        const checkboxes = document.querySelectorAll('.user-select-checkbox');
+        let count = 0;
+        checkboxes.forEach(cb => {
+            if (cb.checked) count++;
+        });
+        const btn = document.getElementById('bulk-delete-btn');
+        if (btn) {
+            btn.style.display = count > 1 ? 'inline-block' : 'none';
+        }
+    }
+
+    function toggleAllCheckboxes(masterCheckbox) {
+        document.querySelectorAll('.user-select-checkbox').forEach(cb => cb.checked = masterCheckbox.checked);
+        toggleBulkDeleteButton();
     }
 </script>
 {% endblock %}

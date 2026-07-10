@@ -146,17 +146,17 @@ def search_users(
         role = "Admin" if u.is_admin else "User"
         html += f"""
         <tr>
-            <td style="padding: 8px;"><input type="checkbox" name="usernames" value="{u.username}" class="user-select-checkbox"></td>
+            <td style="padding: 8px;"><input type="checkbox" name="usernames" value="{u.username}" class="user-select-checkbox" onchange="toggleBulkDeleteButton()"></td>
             <td>{u.username}</td>
             <td>{role}</td>
             <td>
                 <form hx-post="/api/admin/users/delete" hx-target="#user-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete {u.username}?" style="margin: 0; padding: 0; display: inline-block;">
                     <input type="hidden" name="usernames" value="{u.username}">
-                    <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #c62828; border: none; margin-right: 4px;">Delete</button>
+                    <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #c62828; border: none; color: white; display: inline-block; margin-right: 4px;">Delete</button>
                 </form>
-                <form hx-post="/api/admin/users/reset" hx-target="#user-alerts" hx-swap="innerHTML" style="margin: 0; padding: 0;">
+                <form hx-post="/api/admin/users/reset" style="display: inline-block; margin: 0; padding: 0;"  hx-target="#user-alerts" hx-swap="innerHTML" style="margin: 0; padding: 0;">
                     <input type="hidden" name="username" value="{u.username}">
-                    <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #e53935; border: none;">Reset Pwd</button>
+                    <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #ff9800; border: none; color: white; display: inline-block;">Reset Pwd</button>
                 </form>
             </td>
         </tr>
