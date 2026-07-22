@@ -113,15 +113,6 @@ def update_password_policy(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
-    require_2fa_all_users: bool = Form(False),
-    pwd_min_length: int = Form(12),
-    pwd_require_special: bool = Form(False),
-    pwd_require_upper: bool = Form(False),
-    pwd_require_lower: bool = Form(False),
-    pwd_require_number: bool = Form(False),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(deps.get_current_user)
-):
     if not current_user.is_admin:
         return "<article style='background-color: #721c24; color: white; padding: 1rem; border-radius: 4px;'>Unauthorized.</article>"
 
