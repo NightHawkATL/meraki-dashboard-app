@@ -13,6 +13,11 @@ class User(Base):
     two_factor_enabled = Column(Boolean, default=False)
     two_factor_secret = Column(String, nullable=True)
     meraki_api_key_encrypted = Column(String, nullable=True)
+    
+    # User-specific AI overrides
+    user_ai_provider = Column(String, nullable=True) # gemini, groq, ollama
+    user_ai_api_key = Column(String, nullable=True)
+    user_ai_custom_url = Column(String, nullable=True) # For Ollama/Custom endpoints
 
     jobs = relationship("JobHistory", back_populates="owner")
 
@@ -25,6 +30,11 @@ class AdminSettings(Base):
     google_places_api_key = Column(String, nullable=True)
     require_2fa_all_users = Column(Boolean, default=False)
     meraki_auto_refresh_days = Column(Integer, default=7)
+    
+    # AI Fallback Settings (Gemini)
+    global_ai_enabled = Column(Boolean, default=False)
+    global_gemini_api_key = Column(String, nullable=True)
+
     
     # Password Policies
     pwd_min_length = Column(Integer, default=12)

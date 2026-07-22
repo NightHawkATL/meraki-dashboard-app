@@ -199,3 +199,22 @@ def disable_2fa(
         setTimeout(() => { window.location.reload(); }, 1500);
     </script>
     """)
+@router.post("/ai", response_class=HTMLResponse)
+def update_user_ai(
+    user_ai_provider: str = Form(""), # Blank means use Global Default
+    user_ai_api_key: str = Form(""),
+    user_ai_custom_url: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    current_user.user_ai_provider = user_ai_provider if user_ai_provider else None
+    
+    if user_ai_api_key and user_ai_api_key.strip():
+        current_user.user_ai_api_key = user_ai_api_key.strip()
+    
+    # We allow blanking out the custom URL
+    current_user.user_ai_custom_url = user_ai_custom_url.strip() if user_ai_custom_url.strip() else None
+        
+    db.commit()
+
+    return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Personal AI Configuration saved successfully.</article>"

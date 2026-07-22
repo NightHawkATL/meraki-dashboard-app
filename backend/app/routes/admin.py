@@ -197,3 +197,26 @@ def delete_users(
     <script>document.getElementById("user-search-input").dispatchEvent(new Event("keyup"));</script>
     <article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Successfully deleted {count} user(s).</article>
     """
+@router.post("/ai", response_class=HTMLResponse)
+def update_global_ai(
+    global_ai_enabled: bool = Form(False),
+    global_gemini_api_key: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    if not current_user.is_admin:
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; border-radius: 4px;'>Unauthorized.</article>"
+
+    settings = db.query(models.AdminSettings).first()
+    if not settings:
+        settings = models.AdminSettings()
+        db.add(settings)
+        
+    settings.global_ai_enabled = global_ai_enabled
+    # Only overwrite the key if they actually submitted a new one, so they don't blank it out by accident
+    if global_gemini_api_key and global_gemini_api_key.strip():
+        settings.global_gemini_api_key = global_gemini_api_key.strip()
+        
+    db.commit()
+
+    return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Global AI Settings updated successfully.</article>"

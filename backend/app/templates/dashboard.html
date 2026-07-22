@@ -29,6 +29,19 @@
     <!-- Box 1: Script -->
     <div class="mui-paper" id="box-script" style="border-top: 4px solid #1976d2;">
         <label style="font-weight: 600; display: block; margin-bottom: 12px;">1. Select Script</label>
+            <div style="background-color: var(--card-bg); padding: 16px; border-radius: 8px; margin-bottom: 24px; border-left: 4px solid #64b5f6;">
+                <h5 style="margin-bottom: 8px; color: #64b5f6;"><span class="material-symbols-outlined" style="vertical-align: sub; font-size: 20px;">smart_toy</span> AI Script Assistant</h5>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+                    Describe the Meraki API task you want to accomplish. The AI will write the Python script and let you execute it instantly.
+                </p>
+                <form hx-post="/api/scripts/build-ai" hx-target="#script-form-container" hx-swap="innerHTML" style="margin-bottom: 0;">
+                    <textarea name="prompt" class="mui-input" rows="3" style="width: 100%; margin-bottom: 12px; resize: vertical;" placeholder="e.g. Write a script to get all networks in my organization and print their timezones..."></textarea>
+                    <button type="submit" class="mui-btn" style="background: #1e1e1e; border: 1px solid #64b5f6; color: #64b5f6; width: 100%;">
+                        Generate Script with AI
+                    </button>
+                </form>
+            </div>
+            
         <select id="scriptSelect" class="mui-input" style="width: 100%;" onchange="checkCascading()">
             <option value="" disabled selected>Available Scripts</option>
             {% for script in scripts %}

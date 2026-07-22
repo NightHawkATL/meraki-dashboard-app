@@ -35,6 +35,28 @@
 
         <div id="password-alerts"></div>
         <div id="two-factor-alerts"></div>
+        <div id="ai-user-alerts"></div>
+        <h5 style="margin-bottom: 8px;">Personal AI Assistant Override</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            You can override the Global AI settings with your own provider and keys.
+        </p>
+        <form hx-post="/api/auth/ai" hx-target="#ai-user-alerts" hx-swap="innerHTML" style="max-width: 600px; margin-bottom: 24px;">
+            <div style="margin-bottom: 16px;">
+                <select name="user_ai_provider" class="mui-input" style="width: 100%; margin-bottom: 12px;">
+                    <option value="" {% if not current_user.user_ai_provider %}selected{% endif %}>Use Global Default</option>
+                    <option value="gemini" {% if current_user.user_ai_provider == 'gemini' %}selected{% endif %}>Google Gemini (Cloud)</option>
+                    <option value="groq" {% if current_user.user_ai_provider == 'groq' %}selected{% endif %}>Groq (Cloud Llama3)</option>
+                    <option value="ollama" {% if current_user.user_ai_provider == 'ollama' %}selected{% endif %}>Local Ollama</option>
+                </select>
+                <input type="password" name="user_ai_api_key" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
+                       placeholder="{% if current_user.user_ai_api_key %}API Key configured (Enter new to override){% else %}Personal API Key (Optional){% endif %}">
+                <input type="url" name="user_ai_custom_url" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
+                       value="{{ current_user.user_ai_custom_url or '' }}" placeholder="Custom URL (e.g. http://10.0.2.19:11434 for Ollama)">
+                <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Personal AI Config</button>
+            </div>
+        </form>
+        <hr style="border-color: #333; margin: 24px 0;">
+        
         <h5 style="margin-bottom: 8px;">Two-Factor Authentication</h5>
         <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 16px;">
             {% if current_user.two_factor_enabled %}
@@ -145,6 +167,22 @@
             <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Mapbox Key</button>
         </form>
         <hr style="border-color: #333; margin: 24px 0;">
+        <hr style="border-color: #333; margin: 24px 0;">
+        <h5 style="margin-bottom: 8px;">Global AI Assistant Settings</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Configure the default AI Assistant (Gemini Flash 1.5) for text-to-script generation.
+        </p>
+        <div id="ai-global-alerts"></div>
+        <form hx-post="/api/admin/ai" hx-target="#ai-global-alerts" hx-swap="innerHTML" style="max-width: 600px; margin-bottom: 24px;">
+            <div style="margin-bottom: 16px;">
+                <label style="color: #e0e0e0; display: block; margin-bottom: 12px;">
+                    <input type="checkbox" name="global_ai_enabled" value="true" {% if admin_settings and admin_settings.global_ai_enabled %}checked{% endif %}> Enable Global AI Assistant
+                </label>
+                <input type="password" name="global_gemini_api_key" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
+                       placeholder="{% if admin_settings and admin_settings.global_gemini_api_key %}API Key configured (Enter new to override){% else %}Google Gemini API Key{% endif %}">
+                <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Global AI Config</button>
+            </div>
+        </form>
         <h5 style="margin-bottom: 8px;">User Management</h5>
         <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
             Create new dashboard users.
