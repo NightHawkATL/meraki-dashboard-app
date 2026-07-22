@@ -133,9 +133,63 @@ def build_ai_script(
             </p>
             <button type="submit" class="mui-btn" style="background: #1976d2; color: white; border: none; width: 100%;">
                 <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px; margin-right: 4px;">rocket_launch</span>
-                Execute Script Now
-            </button>
-        </form>
+                  Execute Script Now
+              </button>
+          </form>
+          <form hx-post="/api/scripts/save-raw" style="margin-top: 12px;" hx-target="#save-result" hx-swap="innerHTML">
+              <input type="hidden" name="raw_python" value="{encoded_script}">
+              <div class="mui-textfield" style="margin-bottom: 8px;">
+                  <input type="text" name="script_name" placeholder="Script Name (e.g., custom_bounce)" required style="color: white; border-color: #666;">
+              </div>
+              <button type="submit" class="mui-btn mui-btn--flat" style="width: 100%; border: 1px solid #4caf50; color: #4caf50;">
+                  <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px; margin-right: 4px;">save</span>
+                  Save to Library
+              </button>
+              <div id="save-result" style="margin-top: 8px;"></div>
+          </form>
     </div>
     """
     return HTMLResponse(content=html)
+@router.post("/save-raw", response_class=HTMLResponse)
+def save_raw_script(
+    raw_python: str = Form(...),
+    script_name: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    import urllib.parse
+    import os
+    decoded_script = urllib.parse.unquote(raw_python)
+    
+    # Secure the filename
+    safe_name = "".join([c for c in script_name if c.isalpha() or c.isdigit() or c=='_']).rstrip()
+    if not safe_name:
+        return "<article style='color: #ff5252;'>Invalid script name.</article>"
+        
+    script_dir = "/app/storage/scripts/"
+    os.makedirs(script_dir, exist_ok=True)
+    
+    file_path = os.path.join(script_dir, f"{safe_name}.py")
+    
+    try:
+        with open(file_path, "w") as f:
+            f.write(decoded_script)
+        return f"<article style='color: #4caf50;'>Successfully saved to {safe_name}.py!</article>"
+    except Exception as e:
+        return f"<article style='color: #ff5252;'>Error saving: {str(e)}</article>"
+@router.get("/library", response_class=HTMLResponse)
+def get_script_library(db: Session = Depends(get_db)):
+    import os
+    script_dir = "/app/storage/scripts/"
+    os.makedirs(script_dir, exist_ok=True)
+    scripts = [f for f in os.listdir(script_dir) if f.endswith('.py')]
+    
+    if not scripts:
+        return "<p style='color: #aaa; margin: 0;'>Library is empty. Generate and save a script in AI Studio first.</p>"
+        
+    html = "<ul style='list-style: none; padding: 0; margin: 0;'>"
+    for s in scripts:
+        clean_name = s.replace('.py', '')
+        html += f"<li style='margin-bottom: 8px;'><span class='material-symbols-outlined' style='vertical-align: middle; font-size: 16px; margin-right: 4px; color: #4caf50;'>description</span> <strong>{clean_name}</strong></li>"
+    html += "</ul>"
+    return html

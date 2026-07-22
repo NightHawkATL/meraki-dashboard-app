@@ -32,9 +32,16 @@
             
         <select id="scriptSelect" class="mui-input" style="width: 100%;" onchange="checkCascading()">
             <option value="" disabled selected>Available Scripts</option>
+            <optgroup label="AI Generated Sandbox Scripts">
+            {% for s in sandbox_scripts %}
+                <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+            </optgroup>
+            <optgroup label="Built-in Standard Scripts">
             {% for script in scripts %}
             <option value="{{ script.id }}">{{ script.name }}</option>
             {% endfor %}
+            </optgroup>
         </select>
     </div>
     
@@ -46,6 +53,7 @@
             {% for org in orgs %}
             <option value="{{ org.id }}">{{ org.name }}</option>
             {% endfor %}
+            </optgroup>
         </select>
     </div>
     
@@ -59,6 +67,7 @@
                 {{ net.network_name }}
             </option>
             {% endfor %}
+            </optgroup>
         </select>
     </div>
 </div>
