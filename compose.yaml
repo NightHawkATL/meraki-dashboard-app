@@ -33,7 +33,7 @@ services:
       - SECRET_KEY=${SECRET_KEY:-supersecretjwtkey}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     ports:
-      - "80:8000"  # Access the app directly via your server's IP address on port 80!
+      - "8000:8000"  # Access the app directly via your server's IP address on port 80!
     volumes:
       - /mnt/Apps/Storage/meraki_app/script_storage:/app/storage
     depends_on:
