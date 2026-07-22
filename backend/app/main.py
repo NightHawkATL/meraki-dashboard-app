@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from . import models
 from .routes import auth, meraki, ui, admin, scripts
+from sqlalchemy import text
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -16,6 +18,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+def startup_event():
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS global_ai_provider VARCHAR DEFAULT 'gemini';"))
+            conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS global_ai_custom_url VARCHAR;"))
+            conn.commit()
+    except Exception as e:
+        print(f"Migration Error: {e}")
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
