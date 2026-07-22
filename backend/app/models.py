@@ -34,6 +34,8 @@ class AdminSettings(Base):
     # AI Fallback Settings (Gemini)
     global_ai_enabled = Column(Boolean, default=False)
     global_gemini_api_key = Column(String, nullable=True)
+    global_ai_provider = Column(String, default="gemini") # gemini, groq, ollama
+    global_ai_custom_url = Column(String, nullable=True) # Custom endpoint for ollama
 
     
     # Password Policies

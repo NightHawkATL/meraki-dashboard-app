@@ -200,7 +200,9 @@ def delete_users(
 @router.post("/ai", response_class=HTMLResponse)
 def update_global_ai(
     global_ai_enabled: bool = Form(False),
+    global_ai_provider: str = Form("gemini"),
     global_gemini_api_key: str = Form(""),
+    global_ai_custom_url: str = Form(""),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
@@ -213,6 +215,9 @@ def update_global_ai(
         db.add(settings)
         
     settings.global_ai_enabled = global_ai_enabled
+    settings.global_ai_provider = global_ai_provider
+    settings.global_ai_custom_url = global_ai_custom_url.strip() if global_ai_custom_url.strip() else None
+
     # Only overwrite the key if they actually submitted a new one, so they don't blank it out by accident
     if global_gemini_api_key and global_gemini_api_key.strip():
         settings.global_gemini_api_key = global_gemini_api_key.strip()

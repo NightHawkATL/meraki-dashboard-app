@@ -178,8 +178,15 @@
                 <label style="color: #e0e0e0; display: block; margin-bottom: 12px;">
                     <input type="checkbox" name="global_ai_enabled" value="true" {% if admin_settings and admin_settings.global_ai_enabled %}checked{% endif %}> Enable Global AI Assistant
                 </label>
+                <select name="global_ai_provider" class="mui-input" style="width: 100%; margin-bottom: 12px;">
+                    <option value="gemini" {% if admin_settings and admin_settings.global_ai_provider == "gemini" %}selected{% endif %}>Google Gemini (Cloud)</option>
+                    <option value="groq" {% if admin_settings and admin_settings.global_ai_provider == "groq" %}selected{% endif %}>Groq (Cloud Llama3)</option>
+                    <option value="ollama" {% if admin_settings and admin_settings.global_ai_provider == "ollama" %}selected{% endif %}>Local Ollama</option>
+                </select>
                 <input type="password" name="global_gemini_api_key" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
                        placeholder="{% if admin_settings and admin_settings.global_gemini_api_key %}API Key configured (Enter new to override){% else %}Google Gemini API Key{% endif %}">
+                <input type="url" name="global_ai_custom_url" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
+                       value="{{ admin_settings.global_ai_custom_url if admin_settings and admin_settings.global_ai_custom_url else '' }}" placeholder="Custom URL (e.g. http://10.0.2.19:11434 for Ollama)">
                 <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Global AI Config</button>
             </div>
         </form>

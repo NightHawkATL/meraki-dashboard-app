@@ -130,3 +130,15 @@ def render_history(request: Request, db: Session = Depends(get_db), current_user
             "network_names": network_names 
         }
     )
+@router.get("/ai-studio")
+def render_ai_studio(request: Request, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """Renders the dedicated AI Script Builder Studio."""
+    settings_row = db.query(models.AdminSettings).first()
+    return templates.TemplateResponse(
+        "ai_studio.html", 
+        {
+            "request": request, 
+            "current_user": current_user,
+            "admin_settings": settings_row
+        }
+    )
