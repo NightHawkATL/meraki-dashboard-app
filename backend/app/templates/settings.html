@@ -212,9 +212,9 @@
         </p>
         <input type="text" class="mui-input" style="width: 100%; max-width: 600px; margin-bottom: 16px;" placeholder="Search users by email..." 
                id="user-search-input" name="query" hx-post="/api/admin/users/search" hx-trigger="keyup changed delay:500ms" hx-target="#user-results-table">
-        <form id="bulk-delete-form" hx-post="/api/admin/users/delete" hx-target="#user-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete the selected users?">
+        
             <div style="margin-bottom: 8px;">
-                <button type="submit" id="bulk-delete-btn" class="mui-btn" style="background: #c62828; border: none; color: white; padding: 4px 12px; font-size: 0.85rem; display: none;">Delete Selected</button>
+                <button hx-post="/api/admin/users/delete" hx-include=".user-select-checkbox:checked" hx-target="#user-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete the selected users?" id="bulk-delete-btn" class="mui-btn" style="background: #c62828; border: none; color: white; padding: 4px 12px; font-size: 0.85rem; display: none;">Delete Selected</button>
             </div>
         <table style="width: 100%; max-width: 600px; border-collapse: collapse; margin-bottom: 24px;">
             <thead>
@@ -245,7 +245,8 @@
                 {% endfor %}
             </tbody>
         </table>
-        </form>
+        
+
         
         <hr style="border-color: #333; margin: 24px 0;">
         <h5 style="margin-bottom: 8px;">Password Policies</h5>
