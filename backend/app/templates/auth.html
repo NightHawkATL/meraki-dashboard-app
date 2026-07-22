@@ -5,35 +5,7 @@
     <!-- Changed from <article> to <div> to remove Pico's huge margins -->
     <div class="auth-card">
         <header>
-            <h3>{% if not admin_exists %}Meraki Admin        {% else %}
-            <div x-data="{ view: 'login' }">
-                <template x-if="view === 'login'">
-                    <form hx-post="/api/auth/login" hx-target="#auth-alerts" hx-swap="innerHTML">
-                        <label>Email Address
-                            <input type="email" name="username" required>
-                        </label>
-                        <label>Password
-                            <input type="password" name="password" required>
-                        </label>
-                        <button type="submit">Log In</button>
-                        <div style="margin-top: 10px; text-align: center;">
-                            <a href="#" @click.prevent="view = 'register'" style="color: #64b5f6; font-size: 0.9rem;">Need an account? Register here</a>
-                        </div>
-                    </form>
-                </template>
-                <template x-if="view === 'register'">
-                    <form hx-post="/api/auth/register" hx-target="#auth-alerts" hx-swap="innerHTML">
-                        <label>Email Address
-                            <input type="email" name="username" required>
-                        </label>
-                        <button type="submit" style="background-color: #2e7d32; border-color: #2e7d32;">Register</button>
-                        <div style="margin-top: 10px; text-align: center;">
-                            <a href="#" @click.prevent="view = 'login'" style="color: #64b5f6; font-size: 0.9rem;">Back to Login</a>
-                        </div>
-                    </form>
-                </template>
-            </div>
-        {% endif %}</h3>
+            <h3>{% if not admin_exists %}Meraki Admin{% else %}Admin Login{% endif %}</h3>
         </header>
 
         <div id="auth-alerts"></div>
@@ -52,7 +24,7 @@
                 </label>
                 <button type="submit">Create Account</button>
             </form>
-                {% else %}
+        {% else %}
             <div x-data="{ view: 'login' }">
                 <template x-if="view === 'login'">
                     <form hx-post="/api/auth/login" hx-target="#auth-alerts" hx-swap="innerHTML">
