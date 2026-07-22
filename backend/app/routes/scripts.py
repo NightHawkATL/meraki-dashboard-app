@@ -98,4 +98,42 @@ def retry_job(job_id: int, response: Response, db: Session = Depends(get_db), cu
 
     run_meraki_script_task.delay(new_job.id, old_job.script_name, org_id, old_job.target_network_id)
     response.headers["HX-Refresh"] = "true"
-    return ""
+    return ""import urllib.parse
+@router.post("/build-ai")
+from fastapi.responses import HTMLResponse
+
+def build_ai_script(
+    prompt: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    from ..ai_helper import generate_script
+    
+    settings = db.query(models.AdminSettings).first()
+    raw_script = generate_script(prompt, current_user, settings)
+    
+    # We URL encode the script so we can drop it safely into HTMX variables later
+    encoded_script = urllib.parse.quote(raw_script)
+    
+    # Return exactly the same form schema used in building traditional modules so we mirror functionality 
+    html = f"""
+    <div style="background-color: #2c2c2c; padding: 16px; border-radius: 8px; margin-top: 16px;">
+        <h5 style="color: #64b5f6; margin-bottom: 8px;">AI Generated Script</h5>
+        
+        <div style="background-color: #1e1e1e; padding: 12px; border-radius: 4px; overflow-x: auto; margin-bottom: 16px;">
+            <pre style="margin: 0; color: #a5d6ff; font-family: monospace; font-size: 0.85rem;">{raw_script}</pre>
+        </div>
+        
+        <form hx-post="/api/scripts/execute-raw" hx-target="#script-results" hx-swap="innerHTML">
+            <input type="hidden" name="raw_python" value="{encoded_script}">
+            <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+                You should carefully review AI generated code before executing it against your organization.
+            </p>
+            <button type="submit" class="mui-btn" style="background: #1976d2; color: white; border: none; width: 100%;">
+                <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px; margin-right: 4px;">rocket_launch</span>
+                Execute Script Now
+            </button>
+        </form>
+    </div>
+    """
+    return HTMLResponse(content=html)

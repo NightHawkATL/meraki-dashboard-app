@@ -12,7 +12,11 @@
         <!-- The IDs are back! -->
         <div id="nav-tab-profile" class="mui-tab active" onclick="switchTab('tab-profile', this)">Profile & Security</div>
         <div id="nav-tab-meraki" class="mui-tab" onclick="switchTab('tab-meraki', this)">Meraki Integration</div>
+        
+        {% if current_user.is_admin %}
         <div id="nav-tab-system" class="mui-tab" onclick="switchTab('tab-system', this)">System (Admin)</div>
+        {% endif %}
+        
     </div>
 
     <!-- TAB 1: PROFILE -->
@@ -29,8 +33,67 @@
 
         <hr style="border-color: #333; margin: 24px 0;">
 
+        <div id="password-alerts"></div>
+        <div id="two-factor-alerts"></div>
+        <div id="ai-user-alerts"></div>
+        <h5 style="margin-bottom: 8px;">Personal AI Assistant Override</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            You can override the Global AI settings with your own provider and keys.
+        </p>
+        <form hx-post="/api/auth/ai" hx-target="#ai-user-alerts" hx-swap="innerHTML" style="max-width: 600px; margin-bottom: 24px;">
+            <div style="margin-bottom: 16px;">
+                <select name="user_ai_provider" class="mui-input" style="width: 100%; margin-bottom: 12px;">
+                    <option value="" {% if not current_user.user_ai_provider %}selected{% endif %}>Use Global Default</option>
+                    <option value="gemini" {% if current_user.user_ai_provider == 'gemini' %}selected{% endif %}>Google Gemini (Cloud)</option>
+                    <option value="groq" {% if current_user.user_ai_provider == 'groq' %}selected{% endif %}>Groq (Cloud Llama3)</option>
+                    <option value="ollama" {% if current_user.user_ai_provider == 'ollama' %}selected{% endif %}>Local Ollama</option>
+                </select>
+                <input type="password" name="user_ai_api_key" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
+                       placeholder="{% if current_user.user_ai_api_key %}API Key configured (Enter new to override){% else %}Personal API Key (Optional){% endif %}">
+                <input type="url" name="user_ai_custom_url" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
+                       value="{{ current_user.user_ai_custom_url or '' }}" placeholder="Custom URL (e.g. http://10.0.2.19:11434 for Ollama)">
+                <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Personal AI Config</button>
+            </div>
+        </form>
+        <hr style="border-color: #333; margin: 24px 0;">
+        
+        <h5 style="margin-bottom: 8px;">Two-Factor Authentication</h5>
+        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 16px;">
+            {% if current_user.two_factor_enabled %}
+                <span style="color: #4caf50;">✅ Enabled.</span> Your account is protected by an Authenticator app.
+                {% if admin_settings and admin_settings.require_2fa_all_users and not current_user.is_admin %}
+                    <br><span style="color: #e53935;">(Required by Administrator)</span>
+                {% endif %}
+            {% else %}
+                <span style="color: #e53935;">❌ Disabled.</span> We strongly recommend enabling 2FA.
+                {% if admin_settings and admin_settings.require_2fa_all_users %}
+                    <br><strong style="color: #e53935;">Warning: Your administrator has required 2FA. You must enable it to continue using the platform.</strong>
+                {% endif %}
+            {% endif %}
+        </p>
+        <div id="two-factor-setup-area" style="margin-bottom: 32px;">
+            {% if current_user.two_factor_enabled %}
+                {% if not (admin_settings and admin_settings.require_2fa_all_users and not current_user.is_admin) %}
+                <form hx-post="/api/auth/2fa/disable" hx-target="#two-factor-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to disable 2FA?">
+                    <button type="submit" class="mui-btn" style="background: #e53935; border: none; color: white;">Disable 2FA</button>
+                </form>
+                {% endif %}
+            {% else %}
+                <button class="mui-btn" style="background: #1976d2; border: none; color: white;" hx-get="/api/auth/2fa/setup" hx-target="#two-factor-setup-area" hx-swap="innerHTML">Begin Setup</button>
+            {% endif %}
+        </div>
+        
+        <hr style="border-color: #333; margin: 24px 0;">
+
         <h5 style="margin-bottom: 8px;">Change Password</h5>
-        <p style="color: #aaa; font-size: 0.85rem;">Password management coming soon.</p>
+        <form hx-post="/api/auth/password" hx-target="#password-alerts" hx-swap="innerHTML" style="max-width: 600px;">
+            <div style="margin-bottom: 16px;">
+                <input type="password" name="current_password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Current Password" required>
+                <input type="password" name="new_password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="New Password" required minlength="8">
+                <input type="password" name="confirm_new_password" class="mui-input" style="width: 100%; margin-bottom: 16px;" placeholder="Confirm New Password" required minlength="8">
+                <button type="submit" class="mui-btn" style="background: #e53935; border: none; color: white;">Change Password</button>
+            </div>
+        </form>
     </div>
 
     <!-- TAB 2: MERAKI INTEGRATION -->
@@ -86,8 +149,11 @@
         </div>
     </div>
 
+    
     <!-- TAB 3: SYSTEM -->
+    {% if current_user.is_admin %}
     <div id="tab-system" class="tab-content">
+
         <div id="admin-alerts"></div>
         <h5 style="margin-bottom: 8px;">Mapbox Integration</h5>
         <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
@@ -100,7 +166,105 @@
             </div>
             <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Mapbox Key</button>
         </form>
+        <hr style="border-color: #333; margin: 24px 0;">
+        <hr style="border-color: #333; margin: 24px 0;">
+        <h5 style="margin-bottom: 8px;">Global AI Assistant Settings</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Configure the default AI Assistant (Gemini Flash 1.5) for text-to-script generation.
+        </p>
+        <div id="ai-global-alerts"></div>
+        <form hx-post="/api/admin/ai" hx-target="#ai-global-alerts" hx-swap="innerHTML" style="max-width: 600px; margin-bottom: 24px;">
+            <div style="margin-bottom: 16px;">
+                <label style="color: #e0e0e0; display: block; margin-bottom: 12px;">
+                    <input type="checkbox" name="global_ai_enabled" value="true" {% if admin_settings and admin_settings.global_ai_enabled %}checked{% endif %}> Enable Global AI Assistant
+                </label>
+                <input type="password" name="global_gemini_api_key" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
+                       placeholder="{% if admin_settings and admin_settings.global_gemini_api_key %}API Key configured (Enter new to override){% else %}Google Gemini API Key{% endif %}">
+                <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Global AI Config</button>
+            </div>
+        </form>
+        <h5 style="margin-bottom: 8px;">User Management</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Create new dashboard users.
+        </p>
+        <div id="user-alerts"></div>
+        <form hx-post="/api/admin/users" hx-target="#user-alerts" hx-swap="innerHTML" style="max-width: 600px;">
+            <div style="margin-bottom: 16px;">
+                <input type="email" name="username" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Email / Username" required>
+                <input type="password" name="password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Temporary Password" required minlength="8">
+                <div style="margin-bottom: 16px; color: #e0e0e0;">
+                    <label><input type="checkbox" name="is_admin" value="true"> Admin User</label>
+                </div>
+                <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Create User</button>
+            </div>
+        </form>
+        <hr style="border-color: #333; margin: 24px 0;">
+        <h5 style="margin-bottom: 8px;">Find Users</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Search for registered users and reset passwords (max 20 records).
+        </p>
+        <input type="text" class="mui-input" style="width: 100%; max-width: 600px; margin-bottom: 16px;" placeholder="Search users by email..." 
+               id="user-search-input" name="query" hx-post="/api/admin/users/search" hx-trigger="keyup changed delay:500ms" hx-target="#user-results-table">
+        <form id="bulk-delete-form" hx-post="/api/admin/users/delete" hx-target="#user-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete the selected users?">
+            <div style="margin-bottom: 8px;">
+                <button type="submit" id="bulk-delete-btn" class="mui-btn" style="background: #c62828; border: none; color: white; padding: 4px 12px; font-size: 0.85rem; display: none;">Delete Selected</button>
+            </div>
+        <table style="width: 100%; max-width: 600px; border-collapse: collapse; margin-bottom: 24px;">
+            <thead>
+                <tr style="border-bottom: 1px solid #333; text-align: left;">
+                    <th style="padding: 8px; width: 40px;"><input type="checkbox" onclick="toggleAllCheckboxes(this)"></th>
+                    <th style="padding: 8px;">Username</th>
+                    <th style="padding: 8px;">Role</th>
+                    <th style="padding: 8px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="user-results-table">
+                {% for u in all_users %}
+                <tr>
+                    <td style="padding: 8px;"><input type="checkbox" name="usernames" value="{{ u.username }}" class="user-select-checkbox" onchange="toggleBulkDeleteButton()"></td>
+                    <td style="padding: 8px;">{{ u.username }}</td>
+                    <td style="padding: 8px;">{% if u.is_admin %}Admin{% else %}User{% endif %}</td>
+                    <td style="padding: 8px;">
+                        <form hx-post="/api/admin/users/delete" hx-target="#user-alerts" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete {{ u.username }}?" style="margin: 0; padding: 0; display: inline-block; margin-right: 4px;">
+                            <input type="hidden" name="usernames" value="{{ u.username }}">
+                            <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #c62828; border: none; color: white;">Delete</button>
+                        </form>
+                        <form hx-post="/api/admin/users/reset" style="display: inline-block; margin: 0; padding: 0;"  hx-target="#user-alerts" hx-swap="innerHTML" style="margin: 0; padding: 0;">
+                            <input type="hidden" name="username" value="{{ u.username }}">
+                            <button type="submit" class="mui-btn" style="padding: 4px 8px; font-size: 0.8rem; background: #ff9800; border: none; color: white; display: inline-block;">Reset Pwd</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </form>
+        
+        <hr style="border-color: #333; margin: 24px 0;">
+        <h5 style="margin-bottom: 8px;">Password Policies</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Set minimum requirements for user passwords globally.
+        </p>
+        <div id="policy-alerts"></div>
+        <form hx-post="/api/admin/policy" hx-target="#policy-alerts" hx-swap="innerHTML" style="max-width: 600px;">
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; color: #aaa; font-size: 0.85rem; margin-bottom: 4px;">Min Length (<span id="lenLabel">{% if admin_settings %}{{ admin_settings.pwd_min_length }}{% else %}12{% endif %}</span>)</label>
+                <input type="range" name="pwd_min_length" min="8" max="32" value="{% if admin_settings %}{{ admin_settings.pwd_min_length }}{% else %}12{% endif %}" 
+                       oninput="document.getElementById('lenLabel').innerText = this.value" style="width: 100%; margin-bottom: 16px;">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_special" value="true" {% if not admin_settings or admin_settings.pwd_require_special %}checked{% endif %}> Require Special (!@#)</label>
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_upper" value="true" {% if not admin_settings or admin_settings.pwd_require_upper %}checked{% endif %}> Require Uppercase</label>
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_lower" value="true" {% if not admin_settings or admin_settings.pwd_require_lower %}checked{% endif %}> Require Lowercase</label>
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_number" value="true" {% if not admin_settings or admin_settings.pwd_require_number %}checked{% endif %}> Require Numeric</label>
+                    <label style="color: #e0e0e0;"><input type="checkbox" name="require_2fa_all_users" value="true" {% if admin_settings and admin_settings.require_2fa_all_users %}checked{% endif %}> <strong style="color: #ff9800;">Require 2FA globally</strong></label>
+                </div>
+                <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Policies</button>
+            </div>
+        </form>
+    
     </div>
+    {% endif %}
 </div>
 
 <script>
@@ -139,6 +303,22 @@
         document.getElementById('network-placeholder').style.display = 'none';
         document.querySelectorAll('.network-item').forEach(el => el.style.display = 'none');
         document.querySelectorAll('.org-' + orgId).forEach(el => el.style.display = 'block');
+    }
+    function toggleBulkDeleteButton() {
+        const checkboxes = document.querySelectorAll('.user-select-checkbox');
+        let count = 0;
+        checkboxes.forEach(cb => {
+            if (cb.checked) count++;
+        });
+        const btn = document.getElementById('bulk-delete-btn');
+        if (btn) {
+            btn.style.display = count > 1 ? 'inline-block' : 'none';
+        }
+    }
+
+    function toggleAllCheckboxes(masterCheckbox) {
+        document.querySelectorAll('.user-select-checkbox').forEach(cb => cb.checked = masterCheckbox.checked);
+        toggleBulkDeleteButton();
     }
 </script>
 {% endblock %}
