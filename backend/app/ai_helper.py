@@ -70,7 +70,7 @@ def generate_script(prompt: str, current_user: models.User, settings: models.Adm
             
         elif provider == "ollama":
             base_url = custom_url.rstrip("/") if custom_url else "http://127.0.0.1:11434"
-            payload = {"model": "llama3", "prompt": full_prompt, "stream": False, "options": {"temperature": 0.2}}
+            payload = {"model": "qwen2.5-coder:7b", "prompt": full_prompt, "stream": False, "options": {"temperature": 0.2}}
             res = requests.post(f"{base_url}/api/generate", json=payload, timeout=60)
             res.raise_for_status()
             return strip_code_blocks(res.json()["response"])
