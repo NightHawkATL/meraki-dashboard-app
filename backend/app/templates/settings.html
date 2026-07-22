@@ -190,12 +190,12 @@
                 <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Global AI Config</button>
             </div>
         </form>
-        <h5 style="margin-bottom: 8px;">User Management</h5>
-        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
-            Create new dashboard users.
+                <h5 style="margin-bottom: 8px;">User Management</h5>
+        <p style="color: #bbb; margin-bottom: 16px;">
+            Create new dashboard users. A temporary compliant password will be automatically generated and emailed to them.
         </p>
         <div id="user-alerts"></div>
-        <form hx-post="/api/admin/users" hx-target="#user-alerts" hx-swap="innerHTML" style="max-width: 600px;">
+        <form hx-post="/api/admin/users" hx-target="#user-results-table" hx-swap="outerHTML" style="max-width: 600px;">
             <div style="margin-bottom: 16px;">
                 <input type="email" name="username" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Email / Username" required>
                 <input type="password" name="password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Temporary Password" required minlength="8">
@@ -253,22 +253,45 @@
             Set minimum requirements for user passwords globally.
         </p>
         <div id="policy-alerts"></div>
-        <form hx-post="/api/admin/policy" hx-target="#policy-alerts" hx-swap="innerHTML" style="max-width: 600px;">
-            <div style="margin-bottom: 16px;">
-                <label style="display: block; color: #aaa; font-size: 0.85rem; margin-bottom: 4px;">Min Length (<span id="lenLabel">{% if admin_settings %}{{ admin_settings.pwd_min_length }}{% else %}12{% endif %}</span>)</label>
-                <input type="range" name="pwd_min_length" min="8" max="32" value="{% if admin_settings %}{{ admin_settings.pwd_min_length }}{% else %}12{% endif %}" 
-                       oninput="document.getElementById('lenLabel').innerText = this.value" style="width: 100%; margin-bottom: 16px;">
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_special" value="true" {% if not admin_settings or admin_settings.pwd_require_special %}checked{% endif %}> Require Special (!@#)</label>
-                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_upper" value="true" {% if not admin_settings or admin_settings.pwd_require_upper %}checked{% endif %}> Require Uppercase</label>
-                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_lower" value="true" {% if not admin_settings or admin_settings.pwd_require_lower %}checked{% endif %}> Require Lowercase</label>
-                    <label style="color: #e0e0e0;"><input type="checkbox" name="pwd_require_number" value="true" {% if not admin_settings or admin_settings.pwd_require_number %}checked{% endif %}> Require Numeric</label>
-                    <label style="color: #e0e0e0;"><input type="checkbox" name="require_2fa_all_users" value="true" {% if admin_settings and admin_settings.require_2fa_all_users %}checked{% endif %}> <strong style="color: #ff9800;">Require 2FA globally</strong></label>
-                </div>
-                <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Policies</button>
-            </div>
-        </form>
+                        <form hx-post="/api/admin/policy" hx-target="#policy-alerts" hx-swap="innerHTML" style="max-width: 500px; margin-bottom: 24px;">
+    <div style="margin-bottom: 16px;">
+        <label style="color: #e0e0e0; display: block; margin-bottom: 8px;">
+            <input type="checkbox" name="require_2fa_all_users" value="true" {% if admin_settings and admin_settings.require_2fa_all_users %}checked{% endif %}> Enforce 2FA for all users
+        </label>
+    </div>
+    
+    <div style="border-top: 1px solid #444; padding-top: 16px; margin-top: 16px;">
+        <h6 style="color: #64b5f6; margin-bottom: 12px;">Self-Signup Policies</h6>
+        <label style="color: #e0e0e0; display: block; margin-bottom: 8px;">
+            <input type="checkbox" name="allow_self_signup" value="true" {% if admin_settings and admin_settings.allow_self_signup %}checked{% endif %}> Enable Global Self-Signup
+        </label>
+        <small style="color: #aaa; display: block; margin-bottom: 8px;">Leave blank to allow any email if signup is enabled.</small>
+        <input type="text" name="allowed_signup_domains" class="mui-input" style="width: 100%; margin-bottom: 12px;" value="{{ admin_settings.allowed_signup_domains if admin_settings and admin_settings.allowed_signup_domains else '' }}" placeholder="Allowed Domains (comma-separated)">
+        <input type="text" name="allowed_signup_emails" class="mui-input" style="width: 100%; margin-bottom: 12px;" value="{{ admin_settings.allowed_signup_emails if admin_settings and admin_settings.allowed_signup_emails else '' }}" placeholder="Explicit Allowed Emails (comma-separated)">
+    </div>
+
+    <div style="border-top: 1px solid #444; padding-top: 16px; margin-top: 16px;">
+        <h6 style="color: #64b5f6; margin-bottom: 12px;">Password Complexity</h6>
+        <label style="color: #e0e0e0; display: block; margin-bottom: 12px;">
+            Minimum Length:
+            <input type="number" name="pwd_min_length" class="mui-input" style="width: 80px; display: inline-block; margin-left: 8px;" value="{{ admin_settings.pwd_min_length if admin_settings else 12 }}">
+        </label>
+        <label style="color: #e0e0e0; display: block; margin-bottom: 8px;">
+            <input type="checkbox" name="pwd_require_special" value="true" {% if not admin_settings or admin_settings.pwd_require_special %}checked{% endif %}> Require Special Character
+        </label>
+        <label style="color: #e0e0e0; display: block; margin-bottom: 8px;">
+            <input type="checkbox" name="pwd_require_upper" value="true" {% if not admin_settings or admin_settings.pwd_require_upper %}checked{% endif %}> Require Uppercase
+        </label>
+        <label style="color: #e0e0e0; display: block; margin-bottom: 8px;">
+            <input type="checkbox" name="pwd_require_lower" value="true" {% if not admin_settings or admin_settings.pwd_require_lower %}checked{% endif %}> Require Lowercase
+        </label>
+        <label style="color: #e0e0e0; display: block; margin-bottom: 16px;">
+            <input type="checkbox" name="pwd_require_number" value="true" {% if not admin_settings or admin_settings.pwd_require_number %}checked{% endif %}> Require Number
+        </label>
+    </div>
+    <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Policies</button>
+</form>
+
     
     </div>
     {% endif %}

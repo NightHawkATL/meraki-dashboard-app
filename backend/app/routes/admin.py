@@ -99,6 +99,18 @@ def reset_user_password(
 @router.post("/policy", response_class=HTMLResponse)
 def update_password_policy(
     require_2fa_all_users: bool = Form(False),
+    allow_self_signup: bool = Form(False),
+    allowed_signup_domains: str = Form(""),
+    allowed_signup_emails: str = Form(""),
+    pwd_min_length: int = Form(12),
+    pwd_require_special: bool = Form(False),
+    pwd_require_upper: bool = Form(False),
+    pwd_require_lower: bool = Form(False),
+    pwd_require_number: bool = Form(False),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    require_2fa_all_users: bool = Form(False),
     pwd_min_length: int = Form(12),
     pwd_require_special: bool = Form(False),
     pwd_require_upper: bool = Form(False),
@@ -121,6 +133,9 @@ def update_password_policy(
     settings.pwd_require_lower = pwd_require_lower
     settings.pwd_require_number = pwd_require_number
     settings.require_2fa_all_users = require_2fa_all_users
+    settings.allow_self_signup = allow_self_signup
+    settings.allowed_signup_domains = allowed_signup_domains.strip() if allowed_signup_domains.strip() else None
+    settings.allowed_signup_emails = allowed_signup_emails.strip() if allowed_signup_emails.strip() else None
     db.commit()
 
     return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Password policy updated successfully.</article>"

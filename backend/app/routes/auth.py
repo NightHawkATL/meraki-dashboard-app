@@ -47,7 +47,99 @@ def setup_admin(
     return ""
 
 
+
+import smtplib
+from email.message import EmailMessage
+import secrets
+import string
+
+def send_temporary_password_email(email_address: str, temp_password: str):
+    print(f"DEBUG EMAIL ROUTER: Account created for {email_address} with password: {temp_password}")
+    # In a real enterprise system you would configure SMTP here.
+    return True
+
+@router.post("/register")
+def register_user(
+    request: Request,
+    username: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    settings = db.query(models.AdminSettings).first()
+    
+    if not settings or not settings.allow_self_signup:
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request, 
+            "message": "Self-signup is disabled by administrators."
+        })
+        
+    username = username.lower().strip()
+    
+    existing = db.query(models.User).filter(models.User.username == username).first()
+    if existing:
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request, 
+            "message": "Account already exists."
+        })
+
+    domain = username.split("@")[-1]
+    
+    # 1. Check Explicit Allowed Emails first
+    allowed = False
+    if settings.allowed_signup_emails:
+        emails = [e.strip().lower() for e in settings.allowed_signup_emails.split(",")]
+        if username in emails:
+            allowed = True
+            
+    # 2. Check Allowed Domains if not in explicit emails list
+    if not allowed and settings.allowed_signup_domains:
+        domains = [d.strip().lower() for d in settings.allowed_signup_domains.split(",")]
+        if domain in domains:
+            allowed = True
+            
+    # 3. If settings exist but lists are BOTH empty, we default to "allow all" behavior since 'allow_self_signup' was checked.
+    if not settings.allowed_signup_emails and not settings.allowed_signup_domains:
+        allowed = True
+        
+    if not allowed:
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request, 
+            "message": "Your email domain is not authorized for self-signup."
+        })
+
+    # Generate a compliant temporary password
+    alphabet = string.ascii_letters + string.digits + "!@#"
+    while True:
+        temp_pwd = ''.join(secrets.choice(alphabet) for _ in range(settings.pwd_min_length if settings else 12))
+        
+        # Verify it meets all criteria
+        if settings:
+            if settings.pwd_require_number and not any(c.isdigit() for c in temp_pwd): continue
+            if settings.pwd_require_upper and not any(c.isupper() for c in temp_pwd): continue
+            if settings.pwd_require_lower and not any(c.islower() for c in temp_pwd): continue
+            if settings.pwd_require_special and not any(c in "!@#" for c in temp_pwd): continue
+        break
+
+    hashed_pw = security.get_password_hash(temp_pwd)
+    new_user = models.User(
+        username=username,
+        password_hash=hashed_pw,
+        is_admin=False
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    # Trigger the Email Dispatch
+    send_temporary_password_email(username, temp_pwd)
+    
+    return templates.TemplateResponse("components/alert.html", {
+        "request": request, 
+        "message": f"Account created! Your temporary password has been sent to {username}. Debug: {temp_pwd}",
+        "type": "success"
+    })
+
 @router.post("/login")
+
 def login(
     response: Response,
     username: str = Form(...),

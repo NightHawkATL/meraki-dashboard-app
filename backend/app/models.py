@@ -45,6 +45,11 @@ class AdminSettings(Base):
     pwd_require_lower = Column(Boolean, default=True)
     pwd_require_number = Column(Boolean, default=True)
 
+    # User Signup Policies
+    allow_self_signup = Column(Boolean, default=False)
+    allowed_signup_domains = Column(String, nullable=True) # comma separated domains
+    allowed_signup_emails = Column(String, nullable=True) # comma separated emails
+
 class MerakiOrganization(Base):
     __tablename__ = "meraki_organizations"
     id = Column(String, primary_key=True, index=True)

@@ -25,6 +25,9 @@ def startup_event():
         with engine.connect() as conn:
             conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS global_ai_provider VARCHAR DEFAULT 'gemini';"))
             conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS global_ai_custom_url VARCHAR;"))
+            conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS allow_self_signup BOOLEAN DEFAULT FALSE;"))
+            conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS allowed_signup_domains VARCHAR;"))
+            conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS allowed_signup_emails VARCHAR;"))
             conn.commit()
     except Exception as e:
         print(f"Migration Error: {e}")
