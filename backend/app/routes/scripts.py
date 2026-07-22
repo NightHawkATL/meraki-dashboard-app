@@ -98,7 +98,8 @@ def retry_job(job_id: int, response: Response, db: Session = Depends(get_db), cu
 
     run_meraki_script_task.delay(new_job.id, old_job.script_name, org_id, old_job.target_network_id)
     response.headers["HX-Refresh"] = "true"
-    return ""import urllib.parse
+    return ""
+import urllib.parse
 @router.post("/build-ai")
 from fastapi.responses import HTMLResponse
 
