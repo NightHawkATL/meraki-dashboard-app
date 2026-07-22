@@ -29,6 +29,10 @@
             </a>
         </li>
         <li>
+        <a href="/ai-studio" class="nav-item mui-btn mui-btn--flat {% if request.url.path == '/ai-studio' %}active{% endif %}">
+            <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 4px;">smart_toy</span>
+            AI Studio
+        </a>
             <a href="/history" onclick="localStorage.removeItem('activeSettingsTab');">
                 <span class="material-symbols-outlined">history</span> Recent History
             </a>

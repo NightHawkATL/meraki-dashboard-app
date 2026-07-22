@@ -1,0 +1,81 @@
+{% extends "app_layout.html" %}
+
+{% block app_content %}
+<hgroup style="margin-bottom: 24px;">
+    <h2 style="margin-bottom: 4px;">AI Builder Studio</h2>
+    <p style="color: #aaa; font-size: 0.9rem;">Generate completely new scripts, rebuild foreign scripts, or analyze & fix broken ones.</p>
+</hgroup>
+
+<!-- Simple Tab bar -->
+<div style="border-bottom: 1px solid #444; margin-bottom: 24px;">
+    <button class="mui-btn mui-btn--flat tab-btn active" onclick="switchAITab('generate', this)" style="border-radius: 0;">Generate New</button>
+    <button class="mui-btn mui-btn--flat tab-btn" onclick="switchAITab('rebuild', this)" style="border-radius: 0;">Rebuild Script</button>
+    <button class="mui-btn mui-btn--flat tab-btn" onclick="switchAITab('fix', this)" style="border-radius: 0;">Fix Script</button>
+</div>
+
+<!-- Forms Container -->
+<div class="mui-paper" style="padding: 24px; margin-bottom: 24px; border-top: 4px solid #64b5f6;">
+    <form hx-post="/api/scripts/build-ai" hx-target="#ai-output-container" hx-swap="innerHTML">
+        
+        <!-- HIDDEN MODE INPUT -->
+        <input type="hidden" id="modeInput" name="mode" value="generate">
+
+        <!-- GENERATE VIEW -->
+        <div id="ai-generate-view" class="ai-view" style="display: block;">
+            <p style="font-size: 0.9rem; color: #ccc;">Describe the goal. Use specific language if you want to target specific switches or ports.</p>
+            <textarea name="prompt" class="mui-input" rows="4" style="width: 100%; resize: vertical;" placeholder="e.g. Bounce standard switch ports across 5 different switches..."></textarea>
+        </div>
+
+        <!-- REBUILD / FIX VIEW (Reuses same editor block via JS toggle) -->
+        <div id="ai-code-view" class="ai-view" style="display: none;">
+            <p id="ai-code-help" style="font-size: 0.9rem; color: #ccc;">Paste the foreign/broken script below.</p>
+            <textarea name="existing_script" id="existingScriptTA" class="mui-input" rows="8" style="width: 100%; font-family: monospace; resize: vertical;" placeholder="import requests..."></textarea>
+            
+            <p style="font-size: 0.9rem; color: #ccc; margin-top: 16px;">Additional Instructions / Error Message (Optional)</p>
+            <textarea name="prompt" id="codePromptTA" class="mui-input" rows="3" style="width: 100%; resize: vertical;" placeholder="e.g. This script is throwing an unauthenticated error when trying to grab the org id..."></textarea>
+        </div>
+        
+        <div style="margin-top: 24px; text-align: right;">
+            <button type="submit" class="mui-btn" style="background: #1976d2; color: white;">Run AI Task</button>
+        </div>
+    </form>
+</div>
+
+<!-- Output Box -->
+<div id="ai-output-container"></div>
+
+<script>
+    function switchAITab(mode, btn) {
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        btn.classList.add('active');
+        
+        document.getElementById('modeInput').value = mode;
+        
+        if (mode === 'generate') {
+            document.getElementById('ai-generate-view').style.display = 'block';
+            document.getElementById('ai-code-view').style.display = 'none';
+        } else {
+            document.getElementById('ai-generate-view').style.display = 'none';
+            document.getElementById('ai-code-view').style.display = 'block';
+            
+            // Re-label depending on rebuild or fix
+            if (mode === 'rebuild') {
+                document.getElementById('ai-code-help').innerText = "Paste the foreign script here. AI will reconstruct it using the official Meraki SDK mapping.";
+                document.getElementById('codePromptTA').placeholder = "Additional instructions (Optional)";
+            } else {
+                document.getElementById('ai-code-help').innerText = "Paste your broken script here.";
+                document.getElementById('codePromptTA').placeholder = "Paste the error stacktrace here or describe the problem (Optional)...";
+            }
+        }
+        
+        // Remove names from invisible fields so we don't send conflicting duplicate inputs in standard form submission
+        if (mode === 'generate') {
+            document.querySelector('#ai-generate-view textarea[name="prompt"]').setAttribute('name', 'prompt');
+            document.getElementById('codePromptTA').removeAttribute('name');
+        } else {
+            document.querySelector('#ai-generate-view textarea').removeAttribute('name');
+            document.getElementById('codePromptTA').setAttribute('name', 'prompt');
+        }
+    }
+</script>
+{% endblock %}
