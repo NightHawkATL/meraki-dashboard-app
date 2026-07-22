@@ -1,7 +1,10 @@
 import urllib.request
 import urllib.error
 import re
-from fastapi import APIRouter, Depends, Form
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="app/templates")
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from .. import models, deps, security
