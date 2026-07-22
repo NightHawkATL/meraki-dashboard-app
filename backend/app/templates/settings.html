@@ -190,12 +190,12 @@
                 <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Global AI Config</button>
             </div>
         </form>
-        <h5 style="margin-bottom: 8px;">User Management</h5>
-        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
-            Create new dashboard users.
+                <h5 style="margin-bottom: 8px;">User Management</h5>
+        <p style="color: #bbb; margin-bottom: 16px;">
+            Create new dashboard users. A temporary compliant password will be automatically generated and emailed to them.
         </p>
         <div id="user-alerts"></div>
-        <form hx-post="/api/admin/users" hx-target="#user-alerts" hx-swap="innerHTML" style="max-width: 600px;">
+        <form hx-post="/api/admin/users" hx-target="#user-results-table" hx-swap="outerHTML" style="max-width: 600px;">
             <div style="margin-bottom: 16px;">
                 <input type="email" name="username" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Email / Username" required>
                 <input type="password" name="password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Temporary Password" required minlength="8">
