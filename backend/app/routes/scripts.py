@@ -109,10 +109,6 @@ def build_ai_script(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
-    prompt: str = Form(...),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(deps.get_current_user)
-):
     from ..ai_helper import generate_script
     
     settings = db.query(models.AdminSettings).first()
