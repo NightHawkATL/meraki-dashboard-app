@@ -32,7 +32,19 @@ def run_meraki_script_task(job_id: int, script_id: str, org_id: str, network_id:
         time.sleep(2)
         add_log(f"Authenticating to Organization ({org_id})...")
         
-        time.sleep(3)
+        if script_id.startswith("sandbox:"):
+            safe_name = script_id.split(":")[1] + ".py"
+            add_log(f"Sandbox Engine: Injecting Python Context for {safe_name}...")
+            time.sleep(1)
+            try:
+                with open(f"/app/storage/scripts/{safe_name}", "r") as f:
+                    script_code = f.read()
+                vars_dict = {"network_id": network_id, "org_id": org_id}
+                exec(script_code, globals(), vars_dict)
+            except Exception as script_e:
+                raise Exception(f"AI Script Error: {script_e}")
+        else:
+            time.sleep(3)
         add_log(f"Executing '{script_id}' on Network ({network_id})...")
         
         time.sleep(2)

@@ -42,6 +42,11 @@ def render_dashboard(
         {"id": "device_status", "name": "Get Device Status Report"}
     ]
 
+    import os
+    script_dir = "/app/storage/scripts/"
+    os.makedirs(script_dir, exist_ok=True)
+    sandbox_files = [f for f in os.listdir(script_dir) if f.endswith('.py')]
+    sandbox_scripts = [{"id": f"sandbox:{f}", "name": f.replace('.py', '')} for f in sandbox_files]
     all_users = []
     if current_user.is_admin:
         all_users = db.query(models.User).limit(20).all()
@@ -65,6 +70,7 @@ def render_dashboard(
             "request": request, 
             "current_user": current_user,
             "scripts": scripts,
+            "sandbox_scripts": sandbox_scripts,
             "orgs": list(unique_orgs.values()),
             "networks": mapped_networks,   # <--- FIX: Using mapped_networks instead of cache!
             "mapbox_key": mapbox_key,
@@ -87,6 +93,11 @@ def render_settings(request: Request, db: Session = Depends(get_db), current_use
     unique_orgs = {org.id: {"id": org.id, "name": org.name} for org in orgs}
     mapped_networks = [{"network_id": net.id, "org_id": net.org_id, "network_name": net.name} for net in networks]
     
+    import os
+    script_dir = "/app/storage/scripts/"
+    os.makedirs(script_dir, exist_ok=True)
+    sandbox_files = [f for f in os.listdir(script_dir) if f.endswith('.py')]
+    sandbox_scripts = [{"id": f"sandbox:{f}", "name": f.replace('.py', '')} for f in sandbox_files]
     all_users = []
     if current_user.is_admin:
         all_users = db.query(models.User).limit(20).all()
