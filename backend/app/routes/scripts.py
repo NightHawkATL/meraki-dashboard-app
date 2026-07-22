@@ -100,8 +100,7 @@ def retry_job(job_id: int, response: Response, db: Session = Depends(get_db), cu
     response.headers["HX-Refresh"] = "true"
     return ""
 import urllib.parse
-@router.post("/build-ai")
-from fastapi.responses import HTMLResponse
+@router.post("/build-ai", response_class=HTMLResponse)
 
 def build_ai_script(
     prompt: str = Form(...),
