@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import meraki
+import os
 from .. import models, deps, security
 from ..database import get_db
 from ..tasks import run_meraki_script_task
@@ -192,14 +193,14 @@ def get_script_library(request: Request, db: Session = Depends(get_db)):
         "sandbox_scripts": sandbox_scripts
     })
 
-@router.get("/raw/{script_name}")
+@router.get("/raw/{script_name}", response_class=Response)
 def get_raw_script(
     script_name: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
     if not current_user.is_admin:
-        return {"error": "Unauthorized. Only admins can read script contents."}
+        return Response(content="Unauthorized. Only admins can read script contents.", media_type="text/plain")
         
     script_dir = "/app/storage/scripts/"
     if not script_name.endswith(".py"):
@@ -207,18 +208,18 @@ def get_raw_script(
         
     # Prevent directory traversal
     if ".." in script_name or "/" in script_name or "\\" in script_name:
-        return {"error": "Invalid script name"}
+        return Response(content="Error: Invalid script name", media_type="text/plain")
         
     filepath = os.path.join(script_dir, script_name)
     if not os.path.exists(filepath):
-        return {"error": f"Script {script_name} not found"}
+        return Response(content=f"Error: Script {script_name} not found", media_type="text/plain")
         
     try:
         with open(filepath, "r") as f:
             content = f.read()
-        return {"filename": script_name, "content": content}
+        return Response(content=content, media_type="text/plain")
     except Exception as e:
-        return {"error": f"Failed to read file: {e}"}
+        return Response(content=f"Error: Failed to read file: {e}", media_type="text/plain")
 
 @router.post("/delete")
 def delete_raw_script(
