@@ -11,6 +11,9 @@
     <button class="mui-btn mui-btn--flat tab-btn active" onclick="switchAITab('generate', this)" style="border-radius: 0;">Generate New</button>
     <button class="mui-btn mui-btn--flat tab-btn" onclick="switchAITab('rebuild', this)" style="border-radius: 0;">Rebuild Script</button>
     <button class="mui-btn mui-btn--flat tab-btn" onclick="switchAITab('fix', this)" style="border-radius: 0;">Fix Script</button>
+    {% if current_user.is_admin %}
+    <button class="mui-btn mui-btn--flat tab-btn" hx-get="/api/scripts/library" hx-target="#ai-output-container" onclick="switchAITab('manage', this)" style="border-radius: 0; color: #ff9800;">Manage Library</button>
+    {% endif %}
 </div>
 
 <!-- Forms Container -->
@@ -49,9 +52,20 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         btn.classList.add('active');
         
+        if (mode === 'manage') {
+            document.getElementById('modeInput').value = mode;
+            document.getElementById('ai-generate-view').style.display = 'none';
+            document.getElementById('ai-code-view').style.display = 'none';
+            document.querySelector('#ai-generate-view textarea[name="prompt"]').removeAttribute('name');
+            document.getElementById('codePromptTA').removeAttribute('name');
+            // HTMX handles the loading via hx-get on the button itself.
+            return;
+        }
+        
         document.getElementById('modeInput').value = mode;
         
         if (mode === 'generate') {
+
             document.getElementById('ai-generate-view').style.display = 'block';
             document.getElementById('ai-code-view').style.display = 'none';
         } else {
