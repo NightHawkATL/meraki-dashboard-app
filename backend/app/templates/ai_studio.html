@@ -8,11 +8,11 @@
 
 <!-- Simple Tab bar -->
 <div style="border-bottom: 1px solid #444; margin-bottom: 24px;">
-    <button class="mui-btn mui-btn--flat tab-btn active" onclick="switchAITab('generate', this)" style="border-radius: 0;">Generate New</button>
-    <button class="mui-btn mui-btn--flat tab-btn" onclick="switchAITab('rebuild', this)" style="border-radius: 0;">Rebuild Script</button>
-    <button class="mui-btn mui-btn--flat tab-btn" onclick="switchAITab('fix', this)" style="border-radius: 0;">Fix Script</button>
+    <button class="mui-btn mui-btn--flat tab-btn active" onclick="switchAITab('generate', this)" style="border-radius: 0;">Generate New (AI)</button>
+    <button class="mui-btn mui-btn--flat tab-btn" onclick="switchAITab('rebuild', this)" style="border-radius: 0;">Fix/Rebuild (AI)</button>
     {% if current_user.is_admin %}
     <button class="mui-btn mui-btn--flat tab-btn" hx-get="/api/scripts/library" hx-target="#ai-output-container" onclick="switchAITab('manage', this)" style="border-radius: 0; color: #ff9800;">Manage Library</button>
+    <button class="mui-btn mui-btn--flat tab-btn" onclick="switchAITab('edit', this)" style="border-radius: 0; display: none;" id="manualEditTabBtn">Manual Edit</button>
     {% endif %}
 </div>
 
@@ -29,17 +29,32 @@
             <textarea name="prompt" class="mui-input" rows="4" style="width: 100%; resize: vertical;" placeholder="e.g. Bounce standard switch ports across 5 different switches..."></textarea>
         </div>
 
-        <!-- REBUILD / FIX VIEW (Reuses same editor block via JS toggle) -->
+        <!-- REBUILD / FIX VIEW -->
         <div id="ai-code-view" class="ai-view" style="display: none;">
-            <p id="ai-code-help" style="font-size: 0.9rem; color: #ccc;">Paste the foreign/broken script below.</p>
+            <p id="ai-code-help" style="font-size: 0.9rem; color: #ccc;">Paste the foreign/broken script below to have the AI completely rewrite it.</p>
             <textarea name="existing_script" id="existingScriptTA" class="mui-input" rows="8" style="width: 100%; font-family: monospace; resize: vertical;" placeholder="import requests..."></textarea>
             
             <p style="font-size: 0.9rem; color: #ccc; margin-top: 16px;">Additional Instructions / Error Message (Optional)</p>
-            <textarea name="prompt" id="codePromptTA" class="mui-input" rows="3" style="width: 100%; resize: vertical;" placeholder="e.g. This script is throwing an unauthenticated error when trying to grab the org id..."></textarea>
+            <textarea name="prompt" id="codePromptTA" class="mui-input" rows="3" style="width: 100%; resize: vertical;" placeholder="e.g. Make this script use the modern SDK..."></textarea>
         </div>
         
+        <div id="ai-submit-container" style="margin-top: 24px; text-align: right;">
+            <button type="submit" class="mui-btn" style="background: #1976d2; color: white;">Generate Script</button>
+        </div>
+    </form>
+
+    <!-- MANUAL EDIT VIEW (Independent Form) -->
+    <form hx-post="/api/scripts/save-raw" id="manual-edit-view" class="ai-view" style="display: none;" hx-target="#ai-output-container" hx-swap="innerHTML">
+        <p style="font-size: 0.9rem; color: #ccc; margin-bottom:12px;">Manually edit the python script below on the host filesystem directly.</p>
+        
+        <div class="mui-textfield" style="margin-bottom: 12px; width: 300px;">
+            <input type="text" name="script_name" id="manualEditName" placeholder="Script Name (no .py)" required style="color: white; border-color: #666; font-family: monospace;">
+        </div>
+
+        <textarea name="raw_python" id="manualEditTA" class="mui-input" rows="18" style="width: 100%; font-family: monospace; resize: vertical;" placeholder="..." required></textarea>
+        
         <div style="margin-top: 24px; text-align: right;">
-            <button type="submit" class="mui-btn" style="background: #1976d2; color: white;">Run AI Task</button>
+            <button type="submit" class="mui-btn" style="border: 1px solid #4caf50; color: #4caf50; background: transparent;">Save to Library</button>
         </div>
     </form>
 </div>
@@ -52,42 +67,41 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         btn.classList.add('active');
         
-
         if (mode === 'manage') {
             document.getElementById('modeInput').value = mode;
             document.getElementById('ai-forms-wrapper').style.display = 'none';
-            // HTMX handles the loading via hx-get on the button itself.
             return;
         }
         
         document.getElementById('ai-forms-wrapper').style.display = 'block';
-
-        
         document.getElementById('modeInput').value = mode;
         
         if (mode === 'generate') {
-
             document.getElementById('ai-generate-view').style.display = 'block';
             document.getElementById('ai-code-view').style.display = 'none';
-        } else {
+            document.getElementById('manual-edit-view').style.display = 'none';
+            document.getElementById('ai-submit-container').style.display = 'block';
+        } else if (mode === 'rebuild' || mode === 'fix') {
             document.getElementById('ai-generate-view').style.display = 'none';
+            document.getElementById('manual-edit-view').style.display = 'none';
             document.getElementById('ai-code-view').style.display = 'block';
+            document.getElementById('ai-submit-container').style.display = 'block';
             
-            // Re-label depending on rebuild or fix
             if (mode === 'rebuild') {
-                document.getElementById('ai-code-help').innerText = "Paste the foreign script here. AI will reconstruct it using the official Meraki SDK mapping.";
-                document.getElementById('codePromptTA').placeholder = "Additional instructions (Optional)";
-            } else {
-                document.getElementById('ai-code-help').innerText = "Paste your broken script here.";
-                document.getElementById('codePromptTA').placeholder = "Paste the error stacktrace here or describe the problem (Optional)...";
-            }
+                document.getElementById('ai-code-help').innerText = "Paste the script here. AI will reconstruct or fix it using the official Meraki SDK mapping.";
+            } 
+        } else if (mode === 'edit') {
+            document.getElementById('ai-generate-view').style.display = 'none';
+            document.getElementById('ai-code-view').style.display = 'none';
+            document.getElementById('ai-submit-container').style.display = 'none';
+            document.getElementById('manual-edit-view').style.display = 'block';
         }
         
-        // Remove names from invisible fields so we don't send conflicting duplicate inputs in standard form submission
+        // Remove names from invisible fields so we don't send conflicting duplicate inputs
         if (mode === 'generate') {
             document.querySelector('#ai-generate-view textarea[name="prompt"]').setAttribute('name', 'prompt');
             document.getElementById('codePromptTA').removeAttribute('name');
-        } else {
+        } else if (mode === 'rebuild' || mode === 'fix') {
             document.querySelector('#ai-generate-view textarea').removeAttribute('name');
             document.getElementById('codePromptTA').setAttribute('name', 'prompt');
         }
