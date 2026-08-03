@@ -178,21 +178,19 @@ def save_raw_script(
     except Exception as e:
         return f"<article style='color: #ff5252;'>Error saving: {str(e)}</article>"
 @router.get("/library", response_class=HTMLResponse)
-def get_script_library(db: Session = Depends(get_db)):
+@router.get("/library")
+def get_script_library(request: Request, db: Session = Depends(get_db)):
     import os
     script_dir = "/app/storage/scripts/"
     os.makedirs(script_dir, exist_ok=True)
     scripts = [f for f in os.listdir(script_dir) if f.endswith('.py')]
     
-    if not scripts:
-        return "<p style='color: #aaa; margin: 0;'>Library is empty. Generate and save a script in AI Studio first.</p>"
-        
-    html = "<ul style='list-style: none; padding: 0; margin: 0;'>"
-    for s in scripts:
-        clean_name = s.replace('.py', '')
-        html += f"<li style='margin-bottom: 8px;'><span class='material-symbols-outlined' style='vertical-align: middle; font-size: 16px; margin-right: 4px; color: #4caf50;'>description</span> <strong>{clean_name}</strong></li>"
-    html += "</ul>"
-    return html
+    sandbox_scripts = [{"id": f"sandbox:{f}", "name": f.replace('.py', '')} for f in scripts]
+    
+    return templates.TemplateResponse("components/script_library_hx.html", {
+        "request": request,
+        "sandbox_scripts": sandbox_scripts
+    })
 
 @router.post("/delete")
 def delete_raw_script(
