@@ -22,7 +22,7 @@
                 <td style="padding: 12px 8px; font-family: monospace; color: #64b5f6;">{{ s.name }}.py</td>
                 <td style="padding: 12px 8px;">
                     <div style="display: flex; gap: 8px; align-items: center;">
-                        <button class="mui-btn" style="padding: 4px 12px; background: #1976d2; color: white; border: none; font-size: 0.8rem;" onclick="fetch('/api/scripts/raw/{{ s.name }}').then(r => r.json()).then(data => { if(data.content) { document.getElementById('existingScriptTA').value = data.content; switchAITab('fix', document.querySelectorAll('.tab-btn')[2]); } else { alert(data.error || 'Failed to load script'); } }).catch(err => alert('Error loading script: ' + err));">
+                        <button class="mui-btn" style="padding: 4px 12px; background: #1976d2; color: white; border: none; font-size: 0.8rem;" hx-get="/api/scripts/raw/{{ s.name }}" hx-target="#existingScriptTA" hx-swap="innerHTML" onclick="switchAITab('fix', document.querySelectorAll('.tab-btn')[2]);">
                             Edit
                         </button>
                         
