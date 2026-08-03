@@ -22,14 +22,14 @@
                 <td style="padding: 12px 8px; font-family: monospace; color: #64b5f6;">{{ s.name }}.py</td>
                 <td style="padding: 12px 8px;">
                     <div style="display: flex; gap: 8px; align-items: center;">
-                        <button class="mui-btn mui-btn--flat" style="padding: 4px; min-width: auto; color: #64b5f6;" title="Edit Script Mode" onclick="document.getElementById('existingScriptTA').value = 'import os\n\n# Loaded {{ s.name }}...\n'; switchAITab('fix', document.querySelectorAll('.tab-btn')[2])">
-                            <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
+                        <button class="mui-btn" style="padding: 4px 12px; background: #1976d2; color: white; border: none; font-size: 0.8rem;" onclick="document.getElementById('existingScriptTA').value = 'import os\n\n# Loaded {{ s.name }}...\n'; switchAITab('fix', document.querySelectorAll('.tab-btn')[2])">
+                            Edit
                         </button>
                         
                         <form hx-post="/api/scripts/delete" hx-target="#ai-output-container" hx-swap="innerHTML" hx-confirm="Are you sure you want to permanently delete {{ s.name }}.py from the host filesystem?" style="margin: 0;">
                             <input type="hidden" name="script_name" value="{{ s.name }}">
-                            <button type="submit" class="mui-btn mui-btn--flat" style="color: #f44336; padding: 4px; min-width: auto;" title="Delete Script">
-                                <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                            <button type="submit" class="mui-btn" style="padding: 4px 12px; background: #c62828; color: white; border: none; font-size: 0.8rem;">
+                                Delete
                             </button>
                         </form>
                     </div>
