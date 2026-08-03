@@ -17,7 +17,7 @@
 </div>
 
 <!-- Forms Container -->
-<div class="mui-paper" style="padding: 24px; margin-bottom: 24px; border-top: 4px solid #64b5f6;">
+<div id="ai-forms-wrapper" class="mui-paper" style="padding: 24px; margin-bottom: 24px; border-top: 4px solid #64b5f6;">
     <form hx-post="/api/scripts/build-ai" hx-target="#ai-output-container" hx-swap="innerHTML">
         
         <!-- HIDDEN MODE INPUT -->
@@ -52,15 +52,16 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         btn.classList.add('active');
         
+
         if (mode === 'manage') {
             document.getElementById('modeInput').value = mode;
-            document.getElementById('ai-generate-view').style.display = 'none';
-            document.getElementById('ai-code-view').style.display = 'none';
-            document.querySelector('#ai-generate-view textarea[name="prompt"]').removeAttribute('name');
-            document.getElementById('codePromptTA').removeAttribute('name');
+            document.getElementById('ai-forms-wrapper').style.display = 'none';
             // HTMX handles the loading via hx-get on the button itself.
             return;
         }
+        
+        document.getElementById('ai-forms-wrapper').style.display = 'block';
+
         
         document.getElementById('modeInput').value = mode;
         
