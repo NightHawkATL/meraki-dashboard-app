@@ -1,0 +1,37 @@
+
+{% if message %}
+<div style="background-color: {% if type == 'success' %}#1b5e20{% else %}#721c24{% endif %}; color: white; padding: 1rem; border-radius: 4px; margin-bottom: 24px;">
+    {{ message }}
+</div>
+{% endif %}
+
+<div class="mui-paper" style="border-top: 4px solid #ff9800; padding: 24px;">
+    <h5 style="margin-bottom: 16px;">AI Script Sandbox Library</h5>
+    <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 24px;">Permanently delete generated automation scripts from the filesystem.</p>
+
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+            <tr style="border-bottom: 1px solid #444;">
+                <th style="padding: 8px;">Script Identifier</th>
+                <th style="padding: 8px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sandbox_scripts %}
+            <tr style="border-bottom: 1px solid #333;">
+                <td style="padding: 12px 8px; font-family: monospace; color: #64b5f6;">{{ s.name }}.py</td>
+                <td style="padding: 12px 8px;">
+                    <form hx-post="/api/scripts/delete" hx-target="#ai-output-container" hx-swap="innerHTML" hx-confirm="Are you sure you want to permanently delete {{ s.name }}.py from the host filesystem?" style="margin: 0;">
+                        <input type="hidden" name="script_name" value="{{ s.name }}">
+                        <button type="submit" class="mui-btn" style="background: #c62828; color: white; border: none; padding: 4px 12px; font-size: 0.8rem;">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="2" style="padding: 16px; text-align: center; color: #888;">No sandbox scripts currently exist on the host filesystem.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

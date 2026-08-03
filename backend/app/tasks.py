@@ -33,7 +33,9 @@ def run_meraki_script_task(job_id: int, script_id: str, org_id: str, network_id:
         add_log(f"Authenticating to Organization ({org_id})...")
         
         if script_id.startswith("sandbox:"):
-            safe_name = script_id.split(":")[1] + ".py"
+            safe_name = script_id.split(":")[1]
+            if not safe_name.endswith(".py"):
+                safe_name += ".py"
             add_log(f"Sandbox Engine: Injecting Python Context for {safe_name}...")
             time.sleep(1)
             try:
