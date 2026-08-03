@@ -193,3 +193,64 @@ def get_script_library(db: Session = Depends(get_db)):
         html += f"<li style='margin-bottom: 8px;'><span class='material-symbols-outlined' style='vertical-align: middle; font-size: 16px; margin-right: 4px; color: #4caf50;'>description</span> <strong>{clean_name}</strong></li>"
     html += "</ul>"
     return html
+
+@router.post("/delete")
+def delete_raw_script(
+    request: Request,
+    script_name: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    if not current_user.is_admin:
+        import traceback
+        print(f"Error deleting script: User {current_user.username} is not an admin!\n{traceback.format_exc()}")
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request,
+            "message": "Error deleting script: Only administrators can delete scripts.",
+            "type": "error"
+        })
+        
+    script_dir = "/app/storage/scripts/"
+    
+    # Ensure it ends with .py
+    if not script_name.endswith(".py"):
+        script_name += ".py"
+        
+    # Prevent directory traversal attacks
+    if ".." in script_name or "/" in script_name or "\\" in script_name:
+        print(f"Error: Invalid script name requested for deletion: {script_name}")
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request, 
+            "message": "Error: Invalid script name.",
+            "type": "error"
+        })
+        
+    filepath = os.path.join(script_dir, script_name)
+    
+    if os.path.exists(filepath):
+        try:
+            os.remove(filepath)
+            print(f"Admin {current_user.username} successfully deleted AI sandbox script {script_name}.")
+            # Also regenerate the list to map to UI
+            os.makedirs(script_dir, exist_ok=True)
+            files = [f for f in os.listdir(script_dir) if f.endswith('.py')]
+            return templates.TemplateResponse("components/script_library_hx.html", {
+                "request": request,
+                "sandbox_scripts": [{"id": f"sandbox:{f}", "name": f.replace('.py', '')} for f in files],
+                "message": f"Script '{script_name}' permanently deleted.",
+                "type": "success"
+            })
+        except Exception as e:
+            print(f"Exception deleting file {filepath}: {e}")
+            return templates.TemplateResponse("components/alert.html", {
+                "request": request, 
+                "message": f"Error deleting file: {e}",
+                "type": "error"
+            })
+    else:
+        print(f"Error: Script {script_name} does not exist at {filepath}")
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request, 
+            "message": f"Error: Script '{script_name}' does not exist.",
+            "type": "error"
+        })
