@@ -22,7 +22,7 @@
                 <td style="padding: 12px 8px; font-family: monospace; color: #64b5f6;">{{ s.name }}.py</td>
                 <td style="padding: 12px 8px;">
                     <div style="display: flex; gap: 8px; align-items: center;">
-                        <button class="mui-btn" style="padding: 4px 12px; background: #1976d2; color: white; border: none; font-size: 0.8rem;" hx-get="/api/scripts/raw/{{ s.name }}" hx-target="#existingScriptTA" hx-swap="innerHTML" onclick="switchAITab('fix', document.querySelectorAll('.tab-btn')[2]);">
+                        <button class="mui-btn" style="padding: 4px 12px; background: #1976d2; color: white; border: none; font-size: 0.8rem;" hx-get="/api/scripts/raw/{{ s.name }}" hx-target="#manualEditTA" hx-swap="innerHTML" onclick="document.getElementById('manualEditName').value = '{{ s.name }}'; document.getElementById('manualEditTabBtn').style.display='inline-block'; switchAITab('edit', document.getElementById('manualEditTabBtn'));">
                             Edit
                         </button>
                         
