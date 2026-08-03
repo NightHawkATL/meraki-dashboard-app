@@ -192,6 +192,34 @@ def get_script_library(request: Request, db: Session = Depends(get_db)):
         "sandbox_scripts": sandbox_scripts
     })
 
+@router.get("/raw/{script_name}")
+def get_raw_script(
+    script_name: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    if not current_user.is_admin:
+        return {"error": "Unauthorized. Only admins can read script contents."}
+        
+    script_dir = "/app/storage/scripts/"
+    if not script_name.endswith(".py"):
+        script_name += ".py"
+        
+    # Prevent directory traversal
+    if ".." in script_name or "/" in script_name or "\\" in script_name:
+        return {"error": "Invalid script name"}
+        
+    filepath = os.path.join(script_dir, script_name)
+    if not os.path.exists(filepath):
+        return {"error": f"Script {script_name} not found"}
+        
+    try:
+        with open(filepath, "r") as f:
+            content = f.read()
+        return {"filename": script_name, "content": content}
+    except Exception as e:
+        return {"error": f"Failed to read file: {e}"}
+
 @router.post("/delete")
 def delete_raw_script(
     request: Request,
