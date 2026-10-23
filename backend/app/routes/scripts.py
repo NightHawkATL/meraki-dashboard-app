@@ -107,13 +107,14 @@ def build_ai_script(
     mode: str = Form("generate"),
     prompt: str = Form(""),
     existing_script: str = Form(""),
+    model: str = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
     from ..ai_helper import generate_script
     
     settings = db.query(models.AdminSettings).first()
-    raw_script = generate_script(prompt, current_user, settings, mode, existing_script)
+    raw_script = generate_script(prompt, current_user, settings, mode, existing_script, model_override=model)
     
     # We URL encode the script so we can drop it safely into HTMX variables later
     encoded_script = urllib.parse.quote(raw_script)

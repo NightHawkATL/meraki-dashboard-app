@@ -106,7 +106,7 @@
             </div>
             <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.85rem;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">phone</span>
-                <span>(555) 123-4567</span>
+                <span id="sitePhone">(555) 123-4567</span>
             </div>
         </div>
         <div id="siteInfoPlaceholder" style="color: #888; font-size: 0.85rem;">
@@ -164,7 +164,9 @@
             document.getElementById('siteInfoName').textContent = netSel.options[netSel.selectedIndex].text;
             
             const addressSpan = document.getElementById('siteAddress');
+            const phoneSpan = document.getElementById('sitePhone');
             addressSpan.textContent = "Fetching location from Meraki...";
+            if (phoneSpan) phoneSpan.textContent = "Looking up phone number...";
             
             document.getElementById('siteInfoContent').style.display = 'block';
             document.getElementById('siteInfoPlaceholder').style.display = 'none';
@@ -184,6 +186,14 @@
                 
                 if (data.status === 'success') {
                     addressSpan.textContent = data.address;
+                    if (phoneSpan) {
+                        if (data.phone && data.phone !== 'No phone number listed') {
+                            const cleanNum = data.phone.replace(/[^0-9+]/g, '');
+                            phoneSpan.innerHTML = `<a href="tel:${cleanNum}" style="color: #64b5f6; text-decoration: none; font-weight: 500;">${data.phone}</a>`;
+                        } else {
+                            phoneSpan.textContent = "No phone number listed";
+                        }
+                    }
                     
                     const mapboxKey = "{{ mapbox_key }}";
                     if (!mapboxKey) {
@@ -214,6 +224,7 @@
                     }
                 } else {
                     addressSpan.textContent = "No address configured in Meraki dashboard.";
+                    if (phoneSpan) phoneSpan.textContent = "No phone number available";
                     document.getElementById('mapPlaceholder').style.display = 'block';
                     document.getElementById('map').style.opacity = '0';
                     document.getElementById('map').style.pointerEvents = 'none';
@@ -221,6 +232,7 @@
                 }
             } catch (err) {
                 addressSpan.textContent = "Failed to fetch location.";
+                if (phoneSpan) phoneSpan.textContent = "Unavailable";
             }
 
         } else {

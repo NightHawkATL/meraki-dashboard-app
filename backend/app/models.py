@@ -18,6 +18,7 @@ class User(Base):
     user_ai_provider = Column(String, nullable=True) # gemini, groq, ollama
     user_ai_api_key = Column(String, nullable=True)
     user_ai_custom_url = Column(String, nullable=True) # For Ollama/Custom endpoints
+    user_ai_model = Column(String, nullable=True) # Specific model override
 
     jobs = relationship("JobHistory", back_populates="owner")
 
@@ -36,6 +37,7 @@ class AdminSettings(Base):
     global_gemini_api_key = Column(String, nullable=True)
     global_ai_provider = Column(String, default="gemini") # gemini, groq, ollama
     global_ai_custom_url = Column(String, nullable=True) # Custom endpoint for ollama
+    global_ai_model = Column(String, nullable=True) # Global model selection
 
     
     # Password Policies
@@ -60,6 +62,10 @@ class MerakiNetwork(Base):
     id = Column(String, primary_key=True, index=True)
     org_id = Column(String, ForeignKey("meraki_organizations.id"))
     name = Column(String)
+    phone = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
 
 class MerakiDevice(Base):
     __tablename__ = "meraki_devices"
@@ -69,6 +75,7 @@ class MerakiDevice(Base):
     mac = Column(String, nullable=True)
     model = Column(String, nullable=True)
     address = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
     lat = Column(Float, nullable=True)  # <--- Make sure you import Float at the top of models.py!
     lng = Column(Float, nullable=True)
 
