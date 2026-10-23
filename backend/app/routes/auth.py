@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 
 templates = Jinja2Templates(directory="app/templates")
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from .. import models, security
 from ..database import get_db
 
@@ -20,10 +21,11 @@ def setup_admin(
     db: Session = Depends(get_db)
 ):
     """Creates the initial Admin user using HTMX Form Data."""
+    clean_username = username.lower().strip()
     
     # 1. Enforce Email Format securely on the backend
     email_regex = r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-    if not re.match(email_regex, username):
+    if not re.match(email_regex, clean_username):
         return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Invalid email address.</article>"
 
     # 2. Check if Passwords Match
@@ -35,9 +37,9 @@ def setup_admin(
     if admin_exists:
         return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Admin already exists.</article>"
     
-    # Success! Save the new admin
+    # Success! Save the new admin with normalized username
     hashed_password = security.get_password_hash(password)
-    new_user = models.User(username=username, password_hash=hashed_password, is_admin=True)
+    new_user = models.User(username=clean_username, password_hash=hashed_password, is_admin=True)
     db.add(new_user)
     db.commit()
 
@@ -177,32 +179,33 @@ def forgot_password(
     db: Session = Depends(get_db)
 ):
     """Generates a temporary compliant password and emails it to the user."""
-    username = username.lower().strip()
-    db_user = db.query(models.User).filter(models.User.username == username).first()
+    clean_username = username.lower().strip()
+    db_user = db.query(models.User).filter(func.lower(models.User.username) == clean_username).first()
     
     if not db_user:
         return templates.TemplateResponse("components/alert.html", {
             "request": request,
-            "message": f"If an account exists for {username}, a temporary password has been sent.",
+            "message": f"If an account exists for {clean_username}, a temporary password has been sent.",
             "type": "success"
         })
         
     settings = db.query(models.AdminSettings).first()
     temp_pwd = security.generate_compliant_password(settings)
 
+    # Normalize stored username to lowercase on reset
+    db_user.username = clean_username
     db_user.password_hash = security.get_password_hash(temp_pwd)
     db.commit()
     
-    send_temporary_password_email(username, temp_pwd)
+    send_temporary_password_email(clean_username, temp_pwd)
     
     return templates.TemplateResponse("components/alert.html", {
         "request": request,
-        "message": f"Temporary password sent to {username}. Debug: {temp_pwd}",
+        "message": f"Temporary password for {clean_username}: <strong>{temp_pwd}</strong> (Copy this now to log in)",
         "type": "success"
     })
 
 @router.post("/login")
-
 def login(
     request: Request,
     response: Response,
@@ -211,16 +214,26 @@ def login(
     db: Session = Depends(get_db)
 ):
     """Authenticates a user and sets a Secure Cookie."""
-    db_user = db.query(models.User).filter(models.User.username == username).first()
+    clean_username = username.lower().strip()
+    clean_password = password.strip()
     
-    if not db_user or not security.verify_password(password, db_user.password_hash):
+    # Case-insensitive lookup for email address
+    db_user = db.query(models.User).filter(func.lower(models.User.username) == clean_username).first()
+    
+    # Check password match against hash
+    if not db_user or not security.verify_password(clean_password, db_user.password_hash):
         return templates.TemplateResponse("components/alert.html", {
             "request": request,
             "message": "Invalid email or password.",
             "type": "error"
         })
     
-    # Generate the JWT Token
+    # Normalize stored username if casing was inconsistent
+    if db_user.username != clean_username:
+        db_user.username = clean_username
+        db.commit()
+
+    # Generate the JWT Token using normalized username
     access_token = security.create_access_token(data={"sub": db_user.username})
     
     # Set the token as a Secure HTTP-Only Cookie (un-hackable by Javascript!)
