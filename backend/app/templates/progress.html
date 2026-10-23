@@ -28,8 +28,16 @@
     </div>
 
     {% if job.status in ['Success', 'Failed'] %}
-        <button class="mui-btn" style="background: transparent; border: 1px solid #1976d2; color: #1976d2; margin-top: 16px; cursor: pointer; width: 100%;" 
-                onclick="window.location.reload();">Close / Start New Script</button>
+        <div style="display: flex; gap: 12px; margin-top: 16px;">
+            {% if job.output_file_path %}
+            <a href="/api/scripts/output/{{ job.id }}" target="_blank" class="mui-btn" style="flex: 1; text-align: center; text-decoration: none; background: #1976d2; color: white; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+                Download Output Log
+            </a>
+            {% endif %}
+            <button class="mui-btn" style="flex: 1; background: transparent; border: 1px solid #1976d2; color: #1976d2; cursor: pointer;" 
+                    onclick="window.location.reload();">Close / Start New Script</button>
+        </div>
     {% endif %}
     
     <style>@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }</style>
