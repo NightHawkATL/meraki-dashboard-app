@@ -2,6 +2,47 @@ import requests
 import google.generativeai as genai
 from . import models
 
+def _resolve_gemini_model(api_key: str) -> str:
+    """Dynamically queries the Gemini API for supported generateContent models and selects the best active model."""
+    genai.configure(api_key=api_key)
+    try:
+        available_models = [
+            m.name for m in genai.list_models()
+            if "generateContent" in getattr(m, "supported_generation_methods", [])
+        ]
+        
+        # Priority preferences: modern flagship/flash models first, latest aliases, then stable
+        preferred_patterns = [
+            "gemini-2.5-pro",
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash-latest",
+            "gemini-1.5-pro-latest",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+            "gemini-pro"
+        ]
+
+        # 1. Search for preferred model substrings in available models
+        for pattern in preferred_patterns:
+            for avail in available_models:
+                clean_name = avail.replace("models/", "")
+                if clean_name == pattern or clean_name.startswith(pattern):
+                    return avail
+
+        # 2. If none of the specific patterns matched, pick the newest available gemini model
+        gemini_models = [m for m in available_models if "gemini" in m.lower()]
+        if gemini_models:
+            # Sort by version if possible or return the first supported
+            return gemini_models[0]
+
+        if available_models:
+            return available_models[0]
+    except Exception:
+        pass
+
+    return "models/gemini-1.5-flash-latest"
+
 def _get_provider_config(current_user: models.User, settings: models.AdminSettings):
     provider = "gemini" # Fallback Default
     api_key = ""
@@ -31,8 +72,14 @@ def generate_script(prompt: str, current_user: models.User, settings: models.Adm
     
     if provider == "gemini" and not api_key:
         return "# Error: No Gemini API Key configured. Please check your Personal or Global AI settings."
+    if provider == "openai" and not api_key:
+        return "# Error: No OpenAI API Key configured. Please append it in your Personal or Global AI Settings."
+    if provider == "anthropic" and not api_key:
+        return "# Error: No Anthropic API Key configured. Please append it in your Personal or Global AI Settings."
     if provider == "groq" and not api_key:
         return "# Error: No Groq API Key configured. Please append it in your Personal Settings."
+    if provider == "openwebui" and not custom_url:
+        return "# Error: No OpenWebUI URL configured. Please append it in your Settings."
 
     system_instruction = """
     You are an expert Cisco Meraki Python programmer building scripts for an internal dashboard platform.
@@ -56,31 +103,66 @@ def generate_script(prompt: str, current_user: models.User, settings: models.Adm
         
     try:
         if provider == "gemini":
-            genai.configure(api_key=api_key)
-            # Find an active Gemini model supporting generateContent
-            candidate_models = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-1.5-pro-latest", "gemini-1.5-pro", "gemini-2.5-flash", "gemini-pro"]
-            selected_model_name = None
-            try:
-                available_models = [m.name for m in genai.list_models() if "generateContent" in getattr(m, "supported_generation_methods", [])]
-                for candidate in candidate_models:
-                    for avail in available_models:
-                        if avail.endswith(candidate) or avail == candidate or avail == f"models/{candidate}":
-                            selected_model_name = avail
-                            break
-                    if selected_model_name:
-                        break
-                if not selected_model_name and available_models:
-                    selected_model_name = available_models[0]
-            except Exception:
-                selected_model_name = "gemini-1.5-flash-latest"
-
-            model = genai.GenerativeModel(selected_model_name or "gemini-1.5-flash-latest")
+            selected_model_name = _resolve_gemini_model(api_key)
+            model = genai.GenerativeModel(selected_model_name)
             response = model.generate_content(full_prompt)
             return strip_code_blocks(response.text)
             
+        elif provider == "openai":
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            payload = {
+                "model": "gpt-4o",
+                "messages": [
+                    {"role": "system", "content": system_instruction.strip()},
+                    {"role": "user", "content": prompt if mode == "generate" else full_prompt}
+                ],
+                "temperature": 0.2
+            }
+            res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=45)
+            res.raise_for_status()
+            return strip_code_blocks(res.json()["choices"][0]["message"]["content"])
+
+        elif provider == "anthropic":
+            headers = {
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            }
+            payload = {
+                "model": "claude-3-5-sonnet-20241022",
+                "max_tokens": 4096,
+                "system": system_instruction.strip(),
+                "messages": [
+                    {"role": "user", "content": prompt if mode == "generate" else full_prompt}
+                ]
+            }
+            res = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=payload, timeout=45)
+            res.raise_for_status()
+            data = res.json()
+            reply_text = "".join([c.get("text", "") for c in data.get("content", [])])
+            return strip_code_blocks(reply_text)
+
+        elif provider == "openwebui":
+            base_url = custom_url.rstrip("/")
+            headers = {"Content-Type": "application/json"}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            # Discover or default model
+            model_name = "qwen2.5-coder:7b"
+            payload = {
+                "model": model_name,
+                "messages": [
+                    {"role": "system", "content": system_instruction.strip()},
+                    {"role": "user", "content": prompt if mode == "generate" else full_prompt}
+                ]
+            }
+            res = requests.post(f"{base_url}/api/chat/completions", headers=headers, json=payload, timeout=60)
+            res.raise_for_status()
+            return strip_code_blocks(res.json()["choices"][0]["message"]["content"])
+
         elif provider == "groq":
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-            payload = {"model": "llama3-70b-8192", "messages": [{"role": "user", "content": full_prompt}], "temperature": 0.2}
+            payload = {"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": full_prompt}], "temperature": 0.2}
             res = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=30)
             res.raise_for_status()
             return strip_code_blocks(res.json()["choices"][0]["message"]["content"])

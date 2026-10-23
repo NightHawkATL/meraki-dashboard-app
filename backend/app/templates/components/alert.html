@@ -1,13 +1,24 @@
 {% if type == "success" %}
-<article style="background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+<article class="auto-dismiss-alert" style="background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; transition: opacity 0.5s ease;">
     {{ message }}
 </article>
 {% elif type == "error" %}
-<article style="background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+<article class="auto-dismiss-alert" style="background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; transition: opacity 0.5s ease;">
     {{ message }}
 </article>
 {% else %}
-<article style="background-color: #333333; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+<article class="auto-dismiss-alert" style="background-color: #333333; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; transition: opacity 0.5s ease;">
     {{ message }}
 </article>
 {% endif %}
+<script>
+    (function() {
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.auto-dismiss-alert');
+            alerts.forEach(function(el) {
+                el.style.opacity = '0';
+                setTimeout(function() { el.remove(); }, 500);
+            });
+        }, 6000);
+    })();
+</script>

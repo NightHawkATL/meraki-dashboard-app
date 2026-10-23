@@ -204,6 +204,7 @@ def forgot_password(
 @router.post("/login")
 
 def login(
+    request: Request,
     response: Response,
     username: str = Form(...),
     password: str = Form(...),
@@ -213,7 +214,11 @@ def login(
     db_user = db.query(models.User).filter(models.User.username == username).first()
     
     if not db_user or not security.verify_password(password, db_user.password_hash):
-        return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Invalid email or password.</article>"
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request,
+            "message": "Invalid email or password.",
+            "type": "error"
+        })
     
     # Generate the JWT Token
     access_token = security.create_access_token(data={"sub": db_user.username})
