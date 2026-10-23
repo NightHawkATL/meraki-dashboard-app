@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 templates = Jinja2Templates(directory="app/templates")
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from .. import models, deps, security
 from ..database import get_db
 
@@ -56,20 +57,21 @@ def create_user(
     if not current_user.is_admin:
         return "<article style='background-color: #721c24; color: white; padding: 1rem; border-radius: 4px;'>Unauthorized.</article>"
 
+    clean_username = username.lower().strip()
     email_regex = r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-    if not re.match(email_regex, username):
+    if not re.match(email_regex, clean_username):
         return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>Invalid email address format.</article>"
 
-    existing = db.query(models.User).filter(models.User.username == username).first()
+    existing = db.query(models.User).filter(func.lower(models.User.username) == clean_username).first()
     if existing:
         return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>User already exists.</article>"
 
-    hashed_password = security.get_password_hash(password)
-    new_user = models.User(username=username, password_hash=hashed_password, is_admin=is_admin)
+    hashed_password = security.get_password_hash(password.strip())
+    new_user = models.User(username=clean_username, password_hash=hashed_password, is_admin=is_admin)
     db.add(new_user)
     db.commit()
 
-    return f"<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>User {username} created successfully!</article>"
+    return f"<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>User {clean_username} created successfully!</article>"
 @router.post("/users/reset", response_class=HTMLResponse)
 def reset_user_password(
     username: str = Form(...),
@@ -80,12 +82,19 @@ def reset_user_password(
     if not current_user.is_admin:
         return "<article style='background-color: #721c24; color: white; padding: 1rem; border-radius: 4px;'>Unauthorized.</article>"
 
-    user = db.query(models.User).filter(models.User.username == username).first()
+    clean_username = username.lower().strip()
+    user = db.query(models.User).filter(func.lower(models.User.username) == clean_username).first()
     if not user:
         return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>User not found.</article>"
 
     settings = db.query(models.AdminSettings).first()
     new_password = security.generate_compliant_password(settings)
+    
+    user.username = clean_username
+    user.password_hash = security.get_password_hash(new_password)
+    db.commit()
+
+    return f"<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Password for {clean_username} reset successfully to: <strong>{new_password}</strong> (Please copy this now, it won't be shown again)</article>"
     
     user.password_hash = security.get_password_hash(new_password)
     db.commit()
