@@ -14,13 +14,13 @@
             <p>Create your master Admin account.</p>
             <form hx-post="/api/auth/setup" hx-target="#auth-alerts" hx-swap="innerHTML">
                 <label>Admin Email
-                    <input type="email" name="username" required>
+                    <input type="email" id="setup-username" name="username" autocomplete="username" required>
                 </label>
                 <label>Secure Password
-                    <input type="password" name="password" required>
+                    <input type="password" id="setup-password" name="password" autocomplete="new-password" required>
                 </label>
                 <label>Confirm Password
-                    <input type="password" name="confirm_password" required>
+                    <input type="password" id="setup-confirm-password" name="confirm_password" autocomplete="new-password" required>
                 </label>
                 <button type="submit">Create Account</button>
             </form>
@@ -29,23 +29,41 @@
             <div id="login-view">
                 <form hx-post="/api/auth/login" hx-target="#auth-alerts" hx-swap="innerHTML">
                     <label>Email Address
-                        <input type="email" name="username" required>
+                        <input type="email" id="login-username" name="username" autocomplete="username" required>
                     </label>
                     <label>Password
-                        <input type="password" name="password" required>
+                        <input type="password" id="login-password" name="password" autocomplete="current-password" required>
                     </label>
                     <button type="submit">Log In</button>
-                    <div style="margin-top: 10px; text-align: center;">
-                        <a href="javascript:void(0);" onclick="document.getElementById('login-view').style.display='none'; document.getElementById('register-view').style.display='block';" style="color: #64b5f6; font-size: 0.9rem;">Need an account? Register here</a>
+                    <div style="margin-top: 10px; display: flex; {% if allow_self_signup %}justify-content: space-between;{% else %}justify-content: flex-start;{% endif %} font-size: 0.9rem;">
+                        <a href="javascript:void(0);" onclick="document.getElementById('login-view').style.display='none'; document.getElementById('forgot-view').style.display='block'; if (document.getElementById('register-view')) document.getElementById('register-view').style.display='none';" style="color: #90caf9;">Forgot Password?</a>
+                        {% if allow_self_signup %}
+                        <a href="javascript:void(0);" onclick="document.getElementById('login-view').style.display='none'; document.getElementById('register-view').style.display='block'; document.getElementById('forgot-view').style.display='none';" style="color: #64b5f6;">Need an account? Register</a>
+                        {% endif %}
                     </div>
                 </form>
             </div>
 
+            <!-- Forgot Password Form (Hidden initially) -->
+            <div id="forgot-view" style="display: none;">
+                <form hx-post="/api/auth/forgot-password" hx-target="#auth-alerts" hx-swap="innerHTML">
+                    <p style="font-size: 0.9rem; color: #b0bec5; margin-bottom: 12px;">Enter your email to receive a temporary replacement password.</p>
+                    <label>Email Address
+                        <input type="email" id="forgot-username" name="username" autocomplete="username" required>
+                    </label>
+                    <button type="submit" style="background-color: #0288d1; border-color: #0288d1;">Send Temporary Password</button>
+                    <div style="margin-top: 10px; text-align: center;">
+                        <a href="javascript:void(0);" onclick="document.getElementById('forgot-view').style.display='none'; document.getElementById('login-view').style.display='block';" style="color: #64b5f6; font-size: 0.9rem;">Back to Login</a>
+                    </div>
+                </form>
+            </div>
+
+            {% if allow_self_signup %}
             <!-- Standard Registration Form (Hidden initially) -->
             <div id="register-view" style="display: none;">
                 <form hx-post="/api/auth/register" hx-target="#auth-alerts" hx-swap="innerHTML">
                     <label>Email Address
-                        <input type="email" name="username" required>
+                        <input type="email" id="register-username" name="username" autocomplete="username" required>
                     </label>
                     <button type="submit" style="background-color: #2e7d32; border-color: #2e7d32;">Register</button>
                     <div style="margin-top: 10px; text-align: center;">
@@ -53,6 +71,7 @@
                     </div>
                 </form>
             </div>
+            {% endif %}
         {% endif %}
     </div>
 </div>

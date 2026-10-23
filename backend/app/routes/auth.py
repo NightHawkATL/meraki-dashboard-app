@@ -51,14 +51,53 @@ def setup_admin(
 
 
 
+import os
+from datetime import datetime, timezone
 import smtplib
 from email.message import EmailMessage
 import secrets
 import string
 
 def send_temporary_password_email(email_address: str, temp_password: str):
-    print(f"DEBUG EMAIL ROUTER: Account created for {email_address} with password: {temp_password}")
-    # In a real enterprise system you would configure SMTP here.
+    """Sends temporary password email via configured/default SMTP or logs to stdout and storage."""
+    print(f"DEBUG EMAIL ROUTER: Account notification for {email_address} with password: {temp_password}")
+    
+    # 1. Try sending via SMTP if environment provides host or fallback to local mail relay
+    smtp_host = os.environ.get("SMTP_HOST", "mailhog")
+    smtp_port = int(os.environ.get("SMTP_PORT", "1025"))
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_pass = os.environ.get("SMTP_PASS")
+    sender = os.environ.get("SMTP_FROM", "noreply@parity-meraki.local")
+    
+    try:
+        msg = EmailMessage()
+        msg.set_content(
+            f"Hello,\n\nYour account credentials for Parity Meraki App are ready:\n"
+            f"Username: {email_address}\nTemporary Password: {temp_password}\n\n"
+            f"Please log in and update your password immediately in Settings."
+        )
+        msg["Subject"] = "Your Parity Meraki App Credentials"
+        msg["From"] = sender
+        msg["To"] = email_address
+        
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=3) as server:
+            if smtp_user and smtp_pass:
+                server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+            return True
+    except Exception as e:
+        # Graceful fallback: record to shared storage so admin or user can inspect credentials without SMTP setup
+        pass
+
+    try:
+        outbox_dir = "/app/storage/mail_outbox"
+        os.makedirs(outbox_dir, exist_ok=True)
+        filename = f"{outbox_dir}/{email_address.replace('@', '_at_')}.txt"
+        with open(filename, "a") as f:
+            f.write(f"[{datetime.now(timezone.utc).isoformat()}] User: {email_address} | Temp Password: {temp_password}\n")
+    except Exception:
+        pass
+
     return True
 
 @router.post("/register")
@@ -109,18 +148,8 @@ def register_user(
             "message": "Your email domain is not authorized for self-signup."
         })
 
-    # Generate a compliant temporary password
-    alphabet = string.ascii_letters + string.digits + "!@#"
-    while True:
-        temp_pwd = ''.join(secrets.choice(alphabet) for _ in range(settings.pwd_min_length if settings else 12))
-        
-        # Verify it meets all criteria
-        if settings:
-            if settings.pwd_require_number and not any(c.isdigit() for c in temp_pwd): continue
-            if settings.pwd_require_upper and not any(c.isupper() for c in temp_pwd): continue
-            if settings.pwd_require_lower and not any(c.islower() for c in temp_pwd): continue
-            if settings.pwd_require_special and not any(c in "!@#" for c in temp_pwd): continue
-        break
+    # Generate a conformative temporary password based on global policies
+    temp_pwd = security.generate_compliant_password(settings)
 
     hashed_pw = security.get_password_hash(temp_pwd)
     new_user = models.User(
@@ -138,6 +167,37 @@ def register_user(
     return templates.TemplateResponse("components/alert.html", {
         "request": request, 
         "message": f"Account created! Your temporary password has been sent to {username}. Debug: {temp_pwd}",
+        "type": "success"
+    })
+
+@router.post("/forgot-password")
+def forgot_password(
+    request: Request,
+    username: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Generates a temporary compliant password and emails it to the user."""
+    username = username.lower().strip()
+    db_user = db.query(models.User).filter(models.User.username == username).first()
+    
+    if not db_user:
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request,
+            "message": f"If an account exists for {username}, a temporary password has been sent.",
+            "type": "success"
+        })
+        
+    settings = db.query(models.AdminSettings).first()
+    temp_pwd = security.generate_compliant_password(settings)
+
+    db_user.password_hash = security.get_password_hash(temp_pwd)
+    db.commit()
+    
+    send_temporary_password_email(username, temp_pwd)
+    
+    return templates.TemplateResponse("components/alert.html", {
+        "request": request,
+        "message": f"Temporary password sent to {username}. Debug: {temp_pwd}",
         "type": "success"
     })
 

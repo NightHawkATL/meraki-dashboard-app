@@ -1,0 +1,13 @@
+{% if type == "success" %}
+<article style="background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+    {{ message }}
+</article>
+{% elif type == "error" %}
+<article style="background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+    {{ message }}
+</article>
+{% else %}
+<article style="background-color: #333333; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+    {{ message }}
+</article>
+{% endif %}

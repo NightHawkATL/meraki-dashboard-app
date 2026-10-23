@@ -88,9 +88,9 @@
         <h5 style="margin-bottom: 8px;">Change Password</h5>
         <form hx-post="/api/auth/password" hx-target="#password-alerts" hx-swap="innerHTML" style="max-width: 600px;">
             <div style="margin-bottom: 16px;">
-                <input type="password" name="current_password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Current Password" required>
-                <input type="password" name="new_password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="New Password" required minlength="8">
-                <input type="password" name="confirm_new_password" class="mui-input" style="width: 100%; margin-bottom: 16px;" placeholder="Confirm New Password" required minlength="8">
+                <input type="password" name="current_password" id="current_password" autocomplete="current-password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Current Password" required>
+                <input type="password" name="new_password" id="new_password" autocomplete="new-password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="New Password" required minlength="8">
+                <input type="password" name="confirm_new_password" id="confirm_new_password" autocomplete="new-password" class="mui-input" style="width: 100%; margin-bottom: 16px;" placeholder="Confirm New Password" required minlength="8">
                 <button type="submit" class="mui-btn" style="background: #e53935; border: none; color: white;">Change Password</button>
             </div>
         </form>
@@ -197,8 +197,8 @@
         <div id="user-alerts"></div>
         <form hx-post="/api/admin/users" hx-target="#user-results-table" hx-swap="outerHTML" style="max-width: 600px;">
             <div style="margin-bottom: 16px;">
-                <input type="email" name="username" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Email / Username" required>
-                <input type="password" name="password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Temporary Password" required minlength="8">
+                <input type="email" name="username" id="admin_new_username" autocomplete="username" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Email / Username" required>
+                <input type="password" name="password" id="admin_new_password" autocomplete="new-password" class="mui-input" style="width: 100%; margin-bottom: 12px;" placeholder="Temporary Password" required minlength="8">
                 <div style="margin-bottom: 16px; color: #e0e0e0;">
                     <label><input type="checkbox" name="is_admin" value="true"> Admin User</label>
                 </div>
