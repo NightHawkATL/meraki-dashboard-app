@@ -45,7 +45,10 @@
                 <select name="user_ai_provider" class="mui-input" style="width: 100%; margin-bottom: 12px;">
                     <option value="" {% if not current_user.user_ai_provider %}selected{% endif %}>Use Global Default</option>
                     <option value="gemini" {% if current_user.user_ai_provider == 'gemini' %}selected{% endif %}>Google Gemini (Cloud)</option>
-                    <option value="groq" {% if current_user.user_ai_provider == 'groq' %}selected{% endif %}>Groq (Cloud Llama3)</option>
+                    <option value="openai" {% if current_user.user_ai_provider == 'openai' %}selected{% endif %}>OpenAI (ChatGPT / GPT-4o)</option>
+                    <option value="anthropic" {% if current_user.user_ai_provider == 'anthropic' %}selected{% endif %}>Anthropic (Claude 3.5 Sonnet)</option>
+                    <option value="groq" {% if current_user.user_ai_provider == 'groq' %}selected{% endif %}>Groq (Cloud Llama 3.3)</option>
+                    <option value="openwebui" {% if current_user.user_ai_provider == 'openwebui' %}selected{% endif %}>OpenWebUI (Self-Hosted / Proxy)</option>
                     <option value="ollama" {% if current_user.user_ai_provider == 'ollama' %}selected{% endif %}>Local Ollama</option>
                 </select>
                 <input type="password" name="user_ai_api_key" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
@@ -180,13 +183,16 @@
                 </label>
                 <select name="global_ai_provider" class="mui-input" style="width: 100%; margin-bottom: 12px;">
                     <option value="gemini" {% if admin_settings and admin_settings.global_ai_provider == "gemini" %}selected{% endif %}>Google Gemini (Cloud)</option>
-                    <option value="groq" {% if admin_settings and admin_settings.global_ai_provider == "groq" %}selected{% endif %}>Groq (Cloud Llama3)</option>
+                    <option value="openai" {% if admin_settings and admin_settings.global_ai_provider == "openai" %}selected{% endif %}>OpenAI (ChatGPT / GPT-4o)</option>
+                    <option value="anthropic" {% if admin_settings and admin_settings.global_ai_provider == "anthropic" %}selected{% endif %}>Anthropic (Claude 3.5 Sonnet)</option>
+                    <option value="groq" {% if admin_settings and admin_settings.global_ai_provider == "groq" %}selected{% endif %}>Groq (Cloud Llama 3.3)</option>
+                    <option value="openwebui" {% if admin_settings and admin_settings.global_ai_provider == "openwebui" %}selected{% endif %}>OpenWebUI (Self-Hosted / Proxy)</option>
                     <option value="ollama" {% if admin_settings and admin_settings.global_ai_provider == "ollama" %}selected{% endif %}>Local Ollama</option>
                 </select>
                 <input type="password" name="global_gemini_api_key" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
-                       placeholder="{% if admin_settings and admin_settings.global_gemini_api_key %}API Key configured (Enter new to override){% else %}Google Gemini API Key{% endif %}">
+                       placeholder="{% if admin_settings and admin_settings.global_gemini_api_key %}API Key configured (Enter new to override){% else %}Cloud AI API Key (Gemini, OpenAI, Anthropic, or Groq){% endif %}">
                 <input type="url" name="global_ai_custom_url" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
-                       value="{{ admin_settings.global_ai_custom_url if admin_settings and admin_settings.global_ai_custom_url else '' }}" placeholder="Custom URL (e.g. http://10.0.2.19:11434 for Ollama)">
+                       value="{{ admin_settings.global_ai_custom_url if admin_settings and admin_settings.global_ai_custom_url else '' }}" placeholder="Custom URL (e.g. http://10.0.2.19:11434 for Ollama or http://10.0.2.19:3000 for OpenWebUI)">
                 <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Global AI Config</button>
             </div>
         </form>

@@ -36,9 +36,9 @@
                     </label>
                     <button type="submit">Log In</button>
                     <div style="margin-top: 10px; display: flex; {% if allow_self_signup %}justify-content: space-between;{% else %}justify-content: flex-start;{% endif %} font-size: 0.9rem;">
-                        <a href="javascript:void(0);" onclick="document.getElementById('login-view').style.display='none'; document.getElementById('forgot-view').style.display='block'; if (document.getElementById('register-view')) document.getElementById('register-view').style.display='none';" style="color: #90caf9;">Forgot Password?</a>
+                        <a href="javascript:void(0);" onclick="showAuthView('forgot');" style="color: #90caf9;">Forgot Password?</a>
                         {% if allow_self_signup %}
-                        <a href="javascript:void(0);" onclick="document.getElementById('login-view').style.display='none'; document.getElementById('register-view').style.display='block'; document.getElementById('forgot-view').style.display='none';" style="color: #64b5f6;">Need an account? Register</a>
+                        <a href="javascript:void(0);" onclick="showAuthView('register');" style="color: #64b5f6;">Need an account? Register</a>
                         {% endif %}
                     </div>
                 </form>
@@ -53,7 +53,7 @@
                     </label>
                     <button type="submit" style="background-color: #0288d1; border-color: #0288d1;">Send Temporary Password</button>
                     <div style="margin-top: 10px; text-align: center;">
-                        <a href="javascript:void(0);" onclick="document.getElementById('forgot-view').style.display='none'; document.getElementById('login-view').style.display='block';" style="color: #64b5f6; font-size: 0.9rem;">Back to Login</a>
+                        <a href="javascript:void(0);" onclick="showAuthView('login');" style="color: #64b5f6; font-size: 0.9rem;">Back to Login</a>
                     </div>
                 </form>
             </div>
@@ -67,7 +67,7 @@
                     </label>
                     <button type="submit" style="background-color: #2e7d32; border-color: #2e7d32;">Register</button>
                     <div style="margin-top: 10px; text-align: center;">
-                        <a href="javascript:void(0);" onclick="document.getElementById('register-view').style.display='none'; document.getElementById('login-view').style.display='block';" style="color: #64b5f6; font-size: 0.9rem;">Back to Login</a>
+                        <a href="javascript:void(0);" onclick="showAuthView('login');" style="color: #64b5f6; font-size: 0.9rem;">Back to Login</a>
                     </div>
                 </form>
             </div>
@@ -75,4 +75,24 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+    function clearAuthAlerts() {
+        const alertBox = document.getElementById('auth-alerts');
+        if (alertBox) {
+            alertBox.innerHTML = '';
+        }
+    }
+
+    function showAuthView(viewName) {
+        clearAuthAlerts();
+        const loginView = document.getElementById('login-view');
+        const forgotView = document.getElementById('forgot-view');
+        const registerView = document.getElementById('register-view');
+
+        if (loginView) loginView.style.display = (viewName === 'login') ? 'block' : 'none';
+        if (forgotView) forgotView.style.display = (viewName === 'forgot') ? 'block' : 'none';
+        if (registerView) registerView.style.display = (viewName === 'register') ? 'block' : 'none';
+    }
+</script>
 {% endblock %}
