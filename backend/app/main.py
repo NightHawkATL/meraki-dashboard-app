@@ -36,6 +36,7 @@ def startup_event():
             conn.execute(text("ALTER TABLE meraki_networks ADD COLUMN IF NOT EXISTS lat FLOAT;"))
             conn.execute(text("ALTER TABLE meraki_networks ADD COLUMN IF NOT EXISTS lng FLOAT;"))
             conn.execute(text("ALTER TABLE meraki_devices ADD COLUMN IF NOT EXISTS phone VARCHAR;"))
+            conn.execute(text("ALTER TABLE job_history ADD COLUMN IF NOT EXISTS output_file_path VARCHAR;"))
             conn.commit()
     except Exception as e:
         print(f"Migration Error: {e}")

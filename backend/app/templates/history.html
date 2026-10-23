@@ -39,13 +39,21 @@
                     </span>
                 </td>
                 <td style="padding: 12px 16px; text-align: center;">
-                    {% if job.status == 'Failed' %}
-                        <!-- Run Again Button -->
-                        <button hx-post="/api/scripts/retry/{{ job.id }}" 
-                                class="mui-btn" style="background: transparent; border: 1px solid #1976d2; color: #1976d2; padding: 4px 12px !important;">
-                            Run Again
-                        </button>
-                    {% endif %}
+                    <div style="display: flex; gap: 8px; justify-content: center; align-items: center;">
+                        {% if job.output_file_path %}
+                        <a href="/api/scripts/output/{{ job.id }}" target="_blank" 
+                           class="mui-btn" style="background: transparent; border: 1px solid #64b5f6; color: #64b5f6; padding: 4px 8px !important; text-decoration: none; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;" title="Download Output Log">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Log
+                        </a>
+                        {% endif %}
+                        {% if job.status == 'Failed' %}
+                            <!-- Run Again Button -->
+                            <button hx-post="/api/scripts/retry/{{ job.id }}" 
+                                    class="mui-btn" style="background: transparent; border: 1px solid #1976d2; color: #1976d2; padding: 4px 12px !important;">
+                                Run Again
+                            </button>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% else %}

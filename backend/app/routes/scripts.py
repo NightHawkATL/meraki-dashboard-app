@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Form, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import meraki
@@ -127,28 +127,21 @@ def build_ai_script(
         <div style="background-color: #1e1e1e; padding: 12px; border-radius: 4px; overflow-x: auto; margin-bottom: 16px;">
             <pre style="margin: 0; color: #a5d6ff; font-family: monospace; font-size: 0.85rem;">{raw_script}</pre>
         </div>
-        
-        <form hx-post="/api/scripts/execute-raw" hx-target="#script-results" hx-swap="innerHTML">
+
+        <form hx-post="/api/scripts/save-raw" style="margin-top: 12px;" hx-target="#save-result" hx-swap="innerHTML">
             <input type="hidden" name="raw_python" value="{encoded_script}">
-            <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
-                You should carefully review AI generated code before executing it against your organization.
+            <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 12px;">
+                Save this script to your Sandbox Library to edit it or execute it with selected organization and network context from the Dashboard.
             </p>
-            <button type="submit" class="mui-btn" style="background: #1976d2; color: white; border: none; width: 100%;">
-                <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px; margin-right: 4px;">rocket_launch</span>
-                  Execute Script Now
-              </button>
-          </form>
-          <form hx-post="/api/scripts/save-raw" style="margin-top: 12px;" hx-target="#save-result" hx-swap="innerHTML">
-              <input type="hidden" name="raw_python" value="{encoded_script}">
-              <div class="mui-textfield" style="margin-bottom: 8px;">
-                  <input type="text" name="script_name" placeholder="Script Name (e.g., custom_bounce)" required style="color: white; border-color: #666;">
-              </div>
-              <button type="submit" class="mui-btn mui-btn--flat" style="width: 100%; border: 1px solid #4caf50; color: #4caf50;">
-                  <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px; margin-right: 4px;">save</span>
-                  Save to Library
-              </button>
-              <div id="save-result" style="margin-top: 8px;"></div>
-          </form>
+            <div class="mui-textfield" style="margin-bottom: 8px;">
+                <input type="text" name="script_name" placeholder="Script Name (e.g., custom_bounce)" required style="color: white; border-color: #666;">
+            </div>
+            <button type="submit" class="mui-btn mui-btn--flat" style="width: 100%; border: 1px solid #4caf50; color: #4caf50;">
+                <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px; margin-right: 4px;">save</span>
+                Save to Library
+            </button>
+            <div id="save-result" style="margin-top: 8px;"></div>
+        </form>
     </div>
     """
     return HTMLResponse(content=html)
@@ -282,3 +275,90 @@ def delete_raw_script(
             "message": f"Error: Script '{script_name}' does not exist.",
             "type": "error"
         })
+
+@router.post("/rename")
+def rename_raw_script(
+    request: Request,
+    old_name: str = Form(...),
+    new_name: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    if not current_user.is_admin:
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request,
+            "message": "Error renaming script: Only administrators can rename scripts.",
+            "type": "error"
+        })
+
+    script_dir = "/app/storage/scripts/"
+    os.makedirs(script_dir, exist_ok=True)
+
+    # Sanitize and normalize names
+    clean_old = old_name.replace(".py", "").strip()
+    clean_new = "".join([c for c in new_name.replace(".py", "").strip() if c.isalnum() or c == '_'])
+
+    if not clean_old or not clean_new:
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request,
+            "message": "Error: Invalid script name.",
+            "type": "error"
+        })
+
+    old_filepath = os.path.join(script_dir, f"{clean_old}.py")
+    new_filepath = os.path.join(script_dir, f"{clean_new}.py")
+
+    if not os.path.exists(old_filepath):
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request,
+            "message": f"Error: Source script '{clean_old}.py' not found.",
+            "type": "error"
+        })
+
+    if os.path.exists(new_filepath) and clean_old != clean_new:
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request,
+            "message": f"Error: A script named '{clean_new}.py' already exists.",
+            "type": "error"
+        })
+
+    try:
+        os.rename(old_filepath, new_filepath)
+        files = [f for f in os.listdir(script_dir) if f.endswith('.py')]
+        return templates.TemplateResponse("components/script_library_hx.html", {
+            "request": request,
+            "sandbox_scripts": [{"id": f"sandbox:{f}", "name": f.replace('.py', '')} for f in files],
+            "message": f"Script renamed from '{clean_old}.py' to '{clean_new}.py'.",
+            "type": "success"
+        })
+    except Exception as e:
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request,
+            "message": f"Error renaming file: {e}",
+            "type": "error"
+        })
+
+@router.get("/output/{job_id}")
+def download_job_output(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    """Downloads or views the log/output file generated by a script execution job."""
+    job = db.query(models.JobHistory).filter(models.JobHistory.id == job_id).first()
+    if not job:
+        return Response(content="Job not found.", media_type="text/plain", status_code=404)
+
+    # Allow access if user is admin or is the owner of the job
+    if not current_user.is_admin and job.user_id != current_user.id:
+        return Response(content="Unauthorized access to job output.", media_type="text/plain", status_code=403)
+
+    if not job.output_file_path or not os.path.exists(job.output_file_path):
+        return Response(content="No output file available for this job.", media_type="text/plain", status_code=404)
+
+    filename = os.path.basename(job.output_file_path)
+    return FileResponse(
+        path=job.output_file_path,
+        filename=filename,
+        media_type="text/plain"
+    )

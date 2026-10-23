@@ -7,7 +7,7 @@
 
 <div class="mui-paper" style="border-top: 4px solid #ff9800; padding: 24px;">
     <h5 style="margin-bottom: 16px;">AI Script Sandbox Library</h5>
-    <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 24px;">Permanently delete generated automation scripts from the filesystem.</p>
+    <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 24px;">Manage, edit, rename, and permanently delete generated automation scripts from the filesystem.</p>
 
     <table style="width: 100%; border-collapse: collapse; text-align: left;">
         <thead>
@@ -21,9 +21,13 @@
             <tr style="border-bottom: 1px solid #333;">
                 <td style="padding: 12px 8px; font-family: monospace; color: #64b5f6;">{{ s.name }}.py</td>
                 <td style="padding: 12px 8px;">
-                    <div style="display: flex; gap: 8px; align-items: center;">
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                         <button class="mui-btn" style="padding: 4px 12px; background: #1976d2; color: white; border: none; font-size: 0.8rem;" hx-get="/api/scripts/raw/{{ s.name }}" hx-target="#manualEditTA" hx-swap="innerHTML" onclick="document.getElementById('manualEditName').value = '{{ s.name }}'; document.getElementById('manualEditTabBtn').style.display='inline-block'; switchAITab('edit', document.getElementById('manualEditTabBtn'));">
                             Edit
+                        </button>
+
+                        <button class="mui-btn" style="padding: 4px 12px; background: #37474f; color: #64b5f6; border: 1px solid #546e7a; font-size: 0.8rem;" onclick="promptRenameScript('{{ s.name }}')">
+                            Rename
                         </button>
                         
                         <form hx-post="/api/scripts/delete" hx-target="#ai-output-container" hx-swap="innerHTML" onsubmit="return confirm('Are you sure you want to permanently delete {{ s.name }}.py from the host filesystem?');" style="margin: 0;">
@@ -43,3 +47,19 @@
         </tbody>
     </table>
 </div>
+
+<form id="hiddenRenameForm" hx-post="/api/scripts/rename" hx-target="#ai-output-container" hx-swap="innerHTML" style="display: none;">
+    <input type="hidden" name="old_name" id="renameOldName">
+    <input type="hidden" name="new_name" id="renameNewName">
+</form>
+
+<script>
+    function promptRenameScript(oldName) {
+        const newName = prompt(`Enter new name for script '${oldName}' (alphanumeric and underscores only, no .py):`, oldName);
+        if (newName && newName.trim() && newName.trim() !== oldName) {
+            document.getElementById('renameOldName').value = oldName;
+            document.getElementById('renameNewName').value = newName.trim();
+            htmx.trigger('#hiddenRenameForm', 'submit');
+        }
+    }
+</script>

@@ -50,6 +50,7 @@
         <label style="font-weight: 600; display: block; margin-bottom: 12px;">2. Select Organization</label>
         <select id="orgSelect" class="mui-input" style="width: 100%;" disabled onchange="checkCascading(true)">
             <option value="" disabled selected>Organization</option>
+            <option value="ALL_ORGS" style="color: #ff9800; font-weight: bold;">-- All Organizations (Batch) --</option>
             {% for org in orgs %}
             <option value="{{ org.id }}">{{ org.name }}</option>
             {% endfor %}
@@ -62,6 +63,7 @@
         <label style="font-weight: 600; display: block; margin-bottom: 12px;">3. Select Network</label>
         <select id="netSelect" class="mui-input" style="width: 100%;" disabled onchange="checkCascading()">
             <option value="" disabled selected>Target Network</option>
+            <option value="ALL_NETWORKS" id="optAllNetworks" style="color: #ff9800; font-weight: bold;">-- All Networks (Batch) --</option>
             {% for net in networks %}
             <option value="{{ net.network_id }}" class="net-opt org-{{ net.org_id }}" style="display: none;">
                 {{ net.network_name }}
@@ -148,18 +150,50 @@
             netSel.disabled = false; boxNet.style.opacity = '1';
             if (orgChanged) {
                 netSel.value = ""; 
-                document.querySelectorAll('.net-opt').forEach(opt => {
-                    opt.style.display = opt.classList.contains('org-' + orgSel.value) ? 'block' : 'none';
-                });
+                const optAllNet = document.getElementById('optAllNetworks');
+                if (orgSel.value === 'ALL_ORGS') {
+                    // When All Orgs is selected, only show All Networks (Batch)
+                    if (optAllNet) optAllNet.style.display = 'block';
+                    document.querySelectorAll('.net-opt').forEach(opt => opt.style.display = 'none');
+                    netSel.value = 'ALL_NETWORKS';
+                } else {
+                    if (optAllNet) optAllNet.style.display = 'block';
+                    document.querySelectorAll('.net-opt').forEach(opt => {
+                        opt.style.display = opt.classList.contains('org-' + orgSel.value) ? 'block' : 'none';
+                    });
+                }
             }
         } else {
             netSel.disabled = true; boxNet.style.opacity = '0.5';
         }
 
         if (scriptSel.value && orgSel.value && netSel.value) {
+            const isBatch = (orgSel.value === 'ALL_ORGS' || netSel.value === 'ALL_NETWORKS');
+            const targetDesc = isBatch ? (orgSel.value === 'ALL_ORGS' ? 'All Organizations & Networks (Batch Mode)' : 'All Networks in Organization (Batch Mode)') : netSel.options[netSel.selectedIndex].text;
+
             document.getElementById('verifyScript').textContent = scriptSel.options[scriptSel.selectedIndex].text;
-            document.getElementById('verifyNet').textContent = netSel.options[netSel.selectedIndex].text;
+            document.getElementById('verifyNet').textContent = targetDesc;
             document.getElementById('verifyPanel').style.display = 'block';
+
+            document.getElementById('hiddenScriptId').value = scriptSel.value;
+            document.getElementById('hiddenOrgId').value = orgSel.value;
+            document.getElementById('hiddenNetworkId').value = netSel.value;
+
+            if (isBatch) {
+                document.getElementById('siteInfoName').textContent = targetDesc;
+                const addressSpan = document.getElementById('siteAddress');
+                const phoneSpan = document.getElementById('sitePhone');
+                if (addressSpan) addressSpan.textContent = "Batch Execution Scope Across Multiple Sites";
+                if (phoneSpan) phoneSpan.textContent = "N/A (Batch Mode)";
+                document.getElementById('siteInfoContent').style.display = 'block';
+                document.getElementById('siteInfoPlaceholder').style.display = 'none';
+                document.getElementById('mapPlaceholder').style.display = 'block';
+                document.getElementById('map').style.opacity = '0';
+                document.getElementById('map').style.pointerEvents = 'none';
+                document.getElementById('mapHelperText').textContent = "Map preview disabled in batch execution mode.";
+                document.getElementById('dynamicFormContainer').innerHTML = "<div style='color:#aaa; font-size:0.85rem; margin-bottom: 16px;'>Standard parameters applied across all batch targets.</div>";
+                return;
+            }
             
             document.getElementById('siteInfoName').textContent = netSel.options[netSel.selectedIndex].text;
             
@@ -170,10 +204,6 @@
             
             document.getElementById('siteInfoContent').style.display = 'block';
             document.getElementById('siteInfoPlaceholder').style.display = 'none';
-
-            document.getElementById('hiddenScriptId').value = scriptSel.value;
-            document.getElementById('hiddenOrgId').value = orgSel.value;
-            document.getElementById('hiddenNetworkId').value = netSel.value;
             
             // --- FETCH THE DYNAMIC FORM REQUIREMENTS ---
             document.getElementById('dynamicFormContainer').innerHTML = "<div style='color:#aaa; font-size:0.85rem; margin-bottom: 16px;'>Fetching script variables...</div>";

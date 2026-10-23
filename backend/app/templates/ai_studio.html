@@ -18,7 +18,7 @@
 
 <!-- Forms Container -->
 <div id="ai-forms-wrapper" class="mui-paper" style="padding: 24px; margin-bottom: 24px; border-top: 4px solid #64b5f6;">
-    <form hx-post="/api/scripts/build-ai" hx-target="#ai-output-container" hx-swap="innerHTML">
+    <form hx-post="/api/scripts/build-ai" hx-target="#ai-output-container" hx-swap="innerHTML" hx-indicator="#ai-generating-indicator">
         
         <!-- HIDDEN MODE INPUT -->
         <input type="hidden" id="modeInput" name="mode" value="generate">
@@ -46,9 +46,15 @@
             <p style="font-size: 0.9rem; color: #ccc; margin-top: 16px;">Additional Instructions / Error Message (Optional)</p>
             <textarea name="prompt" id="codePromptTA" class="mui-input" rows="3" style="width: 100%; resize: vertical;" placeholder="e.g. Make this script use the modern SDK..."></textarea>
         </div>
+
+        <!-- AI GENERATING SPINNER / PROGRESS INDICATOR -->
+        <div id="ai-generating-indicator" class="htmx-indicator" style="margin-top: 16px; padding: 14px 18px; background: rgba(25, 118, 210, 0.15); border: 1px solid #1976d2; border-radius: 4px; display: none; align-items: center; gap: 14px;">
+            <div style="width: 22px; height: 22px; border: 3px solid rgba(255,255,255,0.2); border-top-color: #64b5f6; border-radius: 50%; animation: spin 1s linear infinite; flex-shrink: 0;"></div>
+            <span style="color: #64b5f6; font-size: 0.9rem; font-weight: 500;">Generating script with AI... This may take several seconds.</span>
+        </div>
         
         <div id="ai-submit-container" style="margin-top: 24px; text-align: right;">
-            <button type="submit" class="mui-btn" style="background: #1976d2; color: white;">Generate Script</button>
+            <button type="submit" id="aiSubmitBtn" class="mui-btn" style="background: #1976d2; color: white;">Generate Script</button>
         </div>
     </form>
 
@@ -115,6 +121,25 @@
             document.getElementById('codePromptTA').setAttribute('name', 'prompt');
         }
     }
+
+    // Handle spinner and disable submit button during HTMX generation request
+    document.addEventListener('htmx:configRequest', function(evt) {
+        if (evt.detail.elt && evt.detail.elt.matches && evt.detail.elt.matches('form[hx-post="/api/scripts/build-ai"]')) {
+            const btn = document.getElementById('aiSubmitBtn');
+            const ind = document.getElementById('ai-generating-indicator');
+            if (btn) btn.disabled = true;
+            if (ind) ind.style.display = 'flex';
+        }
+    });
+
+    document.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.elt && evt.detail.elt.matches && evt.detail.elt.matches('form[hx-post="/api/scripts/build-ai"]')) {
+            const btn = document.getElementById('aiSubmitBtn');
+            const ind = document.getElementById('ai-generating-indicator');
+            if (btn) btn.disabled = false;
+            if (ind) ind.style.display = 'none';
+        }
+    });
 
     async function loadAIStudioModels() {
         const select = document.getElementById('aiStudioModelSelect');
