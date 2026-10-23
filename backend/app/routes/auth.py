@@ -51,14 +51,53 @@ def setup_admin(
 
 
 
+import os
+from datetime import datetime, timezone
 import smtplib
 from email.message import EmailMessage
 import secrets
 import string
 
 def send_temporary_password_email(email_address: str, temp_password: str):
-    print(f"DEBUG EMAIL ROUTER: Account created for {email_address} with password: {temp_password}")
-    # In a real enterprise system you would configure SMTP here.
+    """Sends temporary password email via configured/default SMTP or logs to stdout and storage."""
+    print(f"DEBUG EMAIL ROUTER: Account notification for {email_address} with password: {temp_password}")
+    
+    # 1. Try sending via SMTP if environment provides host or fallback to local mail relay
+    smtp_host = os.environ.get("SMTP_HOST", "mailhog")
+    smtp_port = int(os.environ.get("SMTP_PORT", "1025"))
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_pass = os.environ.get("SMTP_PASS")
+    sender = os.environ.get("SMTP_FROM", "noreply@parity-meraki.local")
+    
+    try:
+        msg = EmailMessage()
+        msg.set_content(
+            f"Hello,\n\nYour account credentials for Parity Meraki App are ready:\n"
+            f"Username: {email_address}\nTemporary Password: {temp_password}\n\n"
+            f"Please log in and update your password immediately in Settings."
+        )
+        msg["Subject"] = "Your Parity Meraki App Credentials"
+        msg["From"] = sender
+        msg["To"] = email_address
+        
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=3) as server:
+            if smtp_user and smtp_pass:
+                server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+            return True
+    except Exception as e:
+        # Graceful fallback: record to shared storage so admin or user can inspect credentials without SMTP setup
+        pass
+
+    try:
+        outbox_dir = "/app/storage/mail_outbox"
+        os.makedirs(outbox_dir, exist_ok=True)
+        filename = f"{outbox_dir}/{email_address.replace('@', '_at_')}.txt"
+        with open(filename, "a") as f:
+            f.write(f"[{datetime.now(timezone.utc).isoformat()}] User: {email_address} | Temp Password: {temp_password}\n")
+    except Exception:
+        pass
+
     return True
 
 @router.post("/register")

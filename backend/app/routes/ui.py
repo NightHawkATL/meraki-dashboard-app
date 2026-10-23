@@ -14,7 +14,12 @@ def render_home_or_login(request: Request, db: Session = Depends(get_db)):
     admin_exists = db.query(models.User).filter(models.User.is_admin == True).first() is not None
     # Enforce 2FA strictly before letting them move on
     settings = db.query(models.AdminSettings).first()
-    return templates.TemplateResponse("auth.html", {"request": request, "admin_exists": admin_exists})
+    allow_self_signup = bool(settings.allow_self_signup) if settings else False
+    return templates.TemplateResponse("auth.html", {
+        "request": request, 
+        "admin_exists": admin_exists,
+        "allow_self_signup": allow_self_signup
+    })
 
 @router.get("/dashboard")
 def render_dashboard(
