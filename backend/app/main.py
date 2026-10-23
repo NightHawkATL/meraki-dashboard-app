@@ -25,9 +25,17 @@ def startup_event():
         with engine.connect() as conn:
             conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS global_ai_provider VARCHAR DEFAULT 'gemini';"))
             conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS global_ai_custom_url VARCHAR;"))
+            conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS global_ai_model VARCHAR;"))
+            conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS google_places_api_key VARCHAR;"))
             conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS allow_self_signup BOOLEAN DEFAULT FALSE;"))
             conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS allowed_signup_domains VARCHAR;"))
             conn.execute(text("ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS allowed_signup_emails VARCHAR;"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS user_ai_model VARCHAR;"))
+            conn.execute(text("ALTER TABLE meraki_networks ADD COLUMN IF NOT EXISTS phone VARCHAR;"))
+            conn.execute(text("ALTER TABLE meraki_networks ADD COLUMN IF NOT EXISTS address VARCHAR;"))
+            conn.execute(text("ALTER TABLE meraki_networks ADD COLUMN IF NOT EXISTS lat FLOAT;"))
+            conn.execute(text("ALTER TABLE meraki_networks ADD COLUMN IF NOT EXISTS lng FLOAT;"))
+            conn.execute(text("ALTER TABLE meraki_devices ADD COLUMN IF NOT EXISTS phone VARCHAR;"))
             conn.commit()
     except Exception as e:
         print(f"Migration Error: {e}")

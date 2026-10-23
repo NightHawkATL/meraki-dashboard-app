@@ -23,6 +23,15 @@
         <!-- HIDDEN MODE INPUT -->
         <input type="hidden" id="modeInput" name="mode" value="generate">
 
+        <!-- DYNAMIC MODEL SELECTOR -->
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 6px; border: 1px solid #333;">
+            <label for="aiStudioModelSelect" style="color: #64b5f6; font-size: 0.85rem; font-weight: 600; white-space: nowrap; margin-bottom: 0;">AI Model:</label>
+            <select name="model" id="aiStudioModelSelect" class="mui-input" style="flex-grow: 1; font-size: 0.85rem; padding: 6px 10px; margin-bottom: 0;">
+                <option value="">Auto-Detect / Default Model</option>
+            </select>
+            <button type="button" class="mui-btn" style="padding: 6px 12px; font-size: 0.8rem; background: #37474f; color: white; border: none; white-space: nowrap;" onclick="loadAIStudioModels()">Refresh Models</button>
+        </div>
+
         <!-- GENERATE VIEW -->
         <div id="ai-generate-view" class="ai-view" style="display: block;">
             <p style="font-size: 0.9rem; color: #ccc;">Describe the goal. Use specific language if you want to target specific switches or ports.</p>
@@ -106,5 +115,30 @@
             document.getElementById('codePromptTA').setAttribute('name', 'prompt');
         }
     }
+
+    async function loadAIStudioModels() {
+        const select = document.getElementById('aiStudioModelSelect');
+        if (!select) return;
+        const origHtml = select.innerHTML;
+        select.innerHTML = '<option value="">Loading available models...</option>';
+
+        try {
+            const resp = await fetch('/api/auth/ai/models');
+            const data = await resp.json();
+            if (data.status === 'success' && data.models && data.models.length > 0) {
+                let html = '<option value="">Auto-Detect / Default Model</option>';
+                data.models.forEach(m => {
+                    html += `<option value="${m.id}">${m.name}</option>`;
+                });
+                select.innerHTML = html;
+            } else {
+                select.innerHTML = origHtml;
+            }
+        } catch (err) {
+            select.innerHTML = origHtml;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAIStudioModels);
 </script>
 {% endblock %}

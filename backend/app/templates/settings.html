@@ -55,6 +55,18 @@
                        placeholder="{% if current_user.user_ai_api_key %}API Key configured (Enter new to override){% else %}Personal API Key (Optional){% endif %}">
                 <input type="url" name="user_ai_custom_url" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
                        value="{{ current_user.user_ai_custom_url or '' }}" placeholder="Custom URL (e.g. http://10.0.2.19:11434 for Ollama)">
+                <div style="margin-bottom: 16px;">
+                    <label style="color: #bbb; font-size: 0.85rem; display: block; margin-bottom: 4px;">AI Model</label>
+                    <div style="display: flex; gap: 8px;">
+                        <select name="user_ai_model" id="user_ai_model" class="mui-input" style="flex-grow: 1;">
+                            <option value="">Auto-Detect / Default Model</option>
+                            {% if current_user.user_ai_model %}
+                            <option value="{{ current_user.user_ai_model }}" selected>{{ current_user.user_ai_model }} (Current)</option>
+                            {% endif %}
+                        </select>
+                        <button type="button" class="mui-btn" style="white-space: nowrap; font-size: 0.8rem; background: #37474f; border: none; color: white;" onclick="fetchAIModels('user')">Fetch Models</button>
+                    </div>
+                </div>
                 <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Personal AI Config</button>
             </div>
         </form>
@@ -170,10 +182,23 @@
             <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Mapbox Key</button>
         </form>
         <hr style="border-color: #333; margin: 24px 0;">
+
+        <div id="places-alerts"></div>
+        <h5 style="margin-bottom: 8px;">Google Places Integration</h5>
+        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
+            Enter your Google Places API key to automatically gather hotel/site phone numbers and verified location details.
+        </p>
+        <form hx-post="/api/admin/google-places" hx-target="#places-alerts" hx-swap="innerHTML" style="display: flex; gap: 12px; align-items: stretch; max-width: 600px;">
+            <div style="flex-grow: 1;">
+                <input type="password" name="google_places_key" class="mui-input" style="width: 100%;" placeholder="AIzaSy..." value="{{ admin_settings.google_places_api_key if admin_settings and admin_settings.google_places_api_key else '' }}" required>
+            </div>
+            <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Places Key</button>
+        </form>
         <hr style="border-color: #333; margin: 24px 0;">
+
         <h5 style="margin-bottom: 8px;">Global AI Assistant Settings</h5>
         <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px;">
-            Configure the default AI Assistant (Gemini Flash 1.5) for text-to-script generation.
+            Configure the default AI Assistant and model for text-to-script generation.
         </p>
         <div id="ai-global-alerts"></div>
         <form hx-post="/api/admin/ai" hx-target="#ai-global-alerts" hx-swap="innerHTML" style="max-width: 600px; margin-bottom: 24px;">
@@ -193,6 +218,18 @@
                        placeholder="{% if admin_settings and admin_settings.global_gemini_api_key %}API Key configured (Enter new to override){% else %}Cloud AI API Key (Gemini, OpenAI, Anthropic, or Groq){% endif %}">
                 <input type="url" name="global_ai_custom_url" class="mui-input" style="width: 100%; margin-bottom: 12px;" 
                        value="{{ admin_settings.global_ai_custom_url if admin_settings and admin_settings.global_ai_custom_url else '' }}" placeholder="Custom URL (e.g. http://10.0.2.19:11434 for Ollama or http://10.0.2.19:3000 for OpenWebUI)">
+                <div style="margin-bottom: 16px;">
+                    <label style="color: #bbb; font-size: 0.85rem; display: block; margin-bottom: 4px;">AI Model</label>
+                    <div style="display: flex; gap: 8px;">
+                        <select name="global_ai_model" id="global_ai_model" class="mui-input" style="flex-grow: 1;">
+                            <option value="">Auto-Detect / Default Model</option>
+                            {% if admin_settings and admin_settings.global_ai_model %}
+                            <option value="{{ admin_settings.global_ai_model }}" selected>{{ admin_settings.global_ai_model }} (Current)</option>
+                            {% endif %}
+                        </select>
+                        <button type="button" class="mui-btn" style="white-space: nowrap; font-size: 0.8rem; background: #37474f; border: none; color: white;" onclick="fetchAIModels('global')">Fetch Models</button>
+                    </div>
+                </div>
                 <button type="submit" class="mui-btn" style="background: #1976d2; border: none; color: white;">Save Global AI Config</button>
             </div>
         </form>
@@ -356,6 +393,46 @@
     function toggleAllCheckboxes(masterCheckbox) {
         document.querySelectorAll('.user-select-checkbox').forEach(cb => cb.checked = masterCheckbox.checked);
         toggleBulkDeleteButton();
+    }
+
+    async function fetchAIModels(scope) {
+        const isUser = scope === 'user';
+        const providerSel = document.querySelector(isUser ? 'select[name="user_ai_provider"]' : 'select[name="global_ai_provider"]');
+        const keyInput = document.querySelector(isUser ? 'input[name="user_ai_api_key"]' : 'input[name="global_gemini_api_key"]');
+        const urlInput = document.querySelector(isUser ? 'input[name="user_ai_custom_url"]' : 'input[name="global_ai_custom_url"]');
+        const modelSel = document.getElementById(isUser ? 'user_ai_model' : 'global_ai_model');
+
+        const provider = providerSel ? providerSel.value : 'gemini';
+        const apiKey = keyInput ? keyInput.value : '';
+        const customUrl = urlInput ? urlInput.value : '';
+
+        const origHtml = modelSel.innerHTML;
+        modelSel.innerHTML = '<option value="">Querying provider models...</option>';
+
+        try {
+            const formData = new FormData();
+            formData.append('provider', provider);
+            if (apiKey) formData.append('api_key', apiKey);
+            if (customUrl) formData.append('custom_url', customUrl);
+
+            const resp = await fetch('/api/auth/ai/models', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await resp.json();
+
+            if (data.status === 'success' && data.models && data.models.length > 0) {
+                let html = '<option value="">Auto-Detect / Default Model</option>';
+                data.models.forEach(m => {
+                    html += `<option value="${m.id}">${m.name}</option>`;
+                });
+                modelSel.innerHTML = html;
+            } else {
+                modelSel.innerHTML = origHtml;
+            }
+        } catch (err) {
+            modelSel.innerHTML = origHtml;
+        }
     }
 </script>
 {% endblock %}

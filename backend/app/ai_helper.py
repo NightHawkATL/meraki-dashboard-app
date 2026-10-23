@@ -2,73 +2,165 @@ import requests
 import google.generativeai as genai
 from . import models
 
-def _resolve_gemini_model(api_key: str) -> str:
-    """Dynamically queries the Gemini API for supported generateContent models and selects the best active model."""
-    genai.configure(api_key=api_key)
-    try:
-        available_models = [
-            m.name for m in genai.list_models()
-            if "generateContent" in getattr(m, "supported_generation_methods", [])
+def fetch_available_models(provider: str, api_key: str = "", custom_url: str = "") -> list[dict]:
+    """Dynamically queries the provider for available models based on credentials."""
+    models_out = []
+    
+    if provider == "gemini":
+        if api_key:
+            # 1. Try REST endpoint
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+                resp = requests.get(url, timeout=8)
+                if resp.ok:
+                    data = resp.json()
+                    for m in data.get("models", []):
+                        methods = m.get("supportedGenerationMethods", []) or []
+                        if "generateContent" in methods:
+                            model_id = m.get("name", "")
+                            display = m.get("displayName") or model_id.replace("models/", "")
+                            models_out.append({"id": model_id, "name": f"{display} ({model_id})"})
+            except Exception as e:
+                print(f"Gemini REST models fetch error: {e}")
+
+            # 2. Try SDK list_models fallback
+            if not models_out:
+                try:
+                    genai.configure(api_key=api_key)
+                    for m in genai.list_models():
+                        if "generateContent" in getattr(m, "supported_generation_methods", []):
+                            model_id = m.name
+                            display = getattr(m, "display_name", "") or model_id.replace("models/", "")
+                            models_out.append({"id": model_id, "name": f"{display} ({model_id})"})
+                except Exception as e:
+                    print(f"Gemini SDK models fetch error: {e}")
+
+        # If not fetched via API, supply current standard Gemini models
+        if not models_out:
+            fallback_models = [
+                ("models/gemini-2.5-flash", "Gemini 2.5 Flash"),
+                ("models/gemini-2.5-pro", "Gemini 2.5 Pro"),
+                ("models/gemini-2.0-flash", "Gemini 2.0 Flash"),
+                ("models/gemini-2.0-flash-lite", "Gemini 2.0 Flash Lite"),
+                ("models/gemini-1.5-flash", "Gemini 1.5 Flash"),
+                ("models/gemini-1.5-pro", "Gemini 1.5 Pro"),
+            ]
+            for m_id, m_name in fallback_models:
+                models_out.append({"id": m_id, "name": f"{m_name} ({m_id})"})
+
+    elif provider == "openai":
+        if api_key:
+            try:
+                resp = requests.get("https://api.openai.com/v1/models", headers={"Authorization": f"Bearer {api_key}"}, timeout=8)
+                if resp.ok:
+                    for m in resp.json().get("data", []):
+                        m_id = m.get("id", "")
+                        if m_id.startswith(("gpt-", "o1", "o3", "chatgpt-")):
+                            models_out.append({"id": m_id, "name": m_id})
+                    models_out.sort(key=lambda x: x["id"], reverse=True)
+            except Exception:
+                pass
+        if not models_out:
+            for m_id in ["gpt-4o", "gpt-4o-mini", "o1-mini", "o1-preview", "gpt-4-turbo"]:
+                models_out.append({"id": m_id, "name": m_id})
+
+    elif provider == "anthropic":
+        models_out = [
+            {"id": "claude-3-5-sonnet-20241022", "name": "Claude 3.5 Sonnet (Latest)"},
+            {"id": "claude-3-5-haiku-20241022", "name": "Claude 3.5 Haiku"},
+            {"id": "claude-3-opus-20240229", "name": "Claude 3 Opus"},
+            {"id": "claude-3-sonnet-20240229", "name": "Claude 3 Sonnet"}
         ]
-        
-        # Priority preferences: modern flagship/flash models first, latest aliases, then stable
-        preferred_patterns = [
-            "gemini-2.5-pro",
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-pro-latest",
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-pro"
-        ]
 
-        # 1. Search for preferred model substrings in available models
-        for pattern in preferred_patterns:
-            for avail in available_models:
-                clean_name = avail.replace("models/", "")
-                if clean_name == pattern or clean_name.startswith(pattern):
-                    return avail
+    elif provider == "groq":
+        if api_key:
+            try:
+                resp = requests.get("https://api.groq.com/openai/v1/models", headers={"Authorization": f"Bearer {api_key}"}, timeout=8)
+                if resp.ok:
+                    for m in resp.json().get("data", []):
+                        m_id = m.get("id", "")
+                        models_out.append({"id": m_id, "name": m_id})
+            except Exception:
+                pass
+        if not models_out:
+            for m_id in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]:
+                models_out.append({"id": m_id, "name": m_id})
 
-        # 2. If none of the specific patterns matched, pick the newest available gemini model
-        gemini_models = [m for m in available_models if "gemini" in m.lower()]
-        if gemini_models:
-            # Sort by version if possible or return the first supported
-            return gemini_models[0]
+    elif provider in ("ollama", "openwebui"):
+        base_url = (custom_url or "http://127.0.0.1:11434").rstrip("/")
+        if provider == "ollama":
+            try:
+                resp = requests.get(f"{base_url}/api/tags", timeout=5)
+                if resp.ok:
+                    for m in resp.json().get("models", []):
+                        m_name = m.get("name", "")
+                        models_out.append({"id": m_name, "name": m_name})
+            except Exception:
+                pass
+            if not models_out:
+                for m_id in ["qwen2.5-coder:7b", "qwen2.5-coder:3b", "llama3.2", "codellama"]:
+                    models_out.append({"id": m_id, "name": m_id})
+        else:
+            try:
+                headers = {}
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
+                resp = requests.get(f"{base_url}/api/models", headers=headers, timeout=5)
+                if resp.ok:
+                    for m in resp.json().get("data", []):
+                        m_id = m.get("id", "")
+                        models_out.append({"id": m_id, "name": m_id})
+            except Exception:
+                pass
+            if not models_out:
+                for m_id in ["qwen2.5-coder:7b", "llama3.3"]:
+                    models_out.append({"id": m_id, "name": m_id})
 
-        if available_models:
-            return available_models[0]
-    except Exception:
-        pass
+    return models_out
 
-    return "models/gemini-1.5-flash-latest"
+def _resolve_gemini_model(api_key: str, configured_model: str = "") -> str:
+    """Returns the user/admin configured model if provided, or resolves dynamically from available models."""
+    if configured_model:
+        return configured_model
+
+    models = fetch_available_models("gemini", api_key)
+    if models:
+        return models[0]["id"]
+    return "models/gemini-2.0-flash"
 
 def _get_provider_config(current_user: models.User, settings: models.AdminSettings):
     provider = "gemini" # Fallback Default
     api_key = ""
     custom_url = ""
+    configured_model = ""
     
-    if settings.global_ai_enabled:
+    if settings and settings.global_ai_enabled:
         provider = getattr(settings, 'global_ai_provider', 'gemini') or 'gemini'
-        api_key = getattr(settings, 'global_gemini_api_key', '')
-        custom_url = getattr(settings, 'global_ai_custom_url', '')
+        api_key = getattr(settings, 'global_gemini_api_key', '') or ''
+        custom_url = getattr(settings, 'global_ai_custom_url', '') or ''
+        configured_model = getattr(settings, 'global_ai_model', '') or ''
         
-    if current_user.user_ai_provider:
+    if current_user and current_user.user_ai_provider:
         provider = current_user.user_ai_provider
         api_key = current_user.user_ai_api_key if current_user.user_ai_api_key else api_key
-        custom_url = current_user.user_ai_custom_url
+        custom_url = current_user.user_ai_custom_url if current_user.user_ai_custom_url else custom_url
+        if getattr(current_user, 'user_ai_model', None):
+            configured_model = current_user.user_ai_model
         
-    return provider, api_key, custom_url
+    return provider, api_key, custom_url, configured_model
 
-def generate_script(prompt: str, current_user: models.User, settings: models.AdminSettings, mode: str = "generate", existing_script: str = "") -> str:
-    """Takes a user prompt, routes it to preferred AI, and returns Python output.
-    Modes:
-        - generate: Build entirely new script
-        - fix: User provided existing script + error/prompt asking for a patch
-        - rebuild: User pasted foreign script, remake it to fit app bounds
-    """
+def generate_script(
+    prompt: str,
+    current_user: models.User,
+    settings: models.AdminSettings,
+    mode: str = "generate",
+    existing_script: str = "",
+    model_override: str = None
+) -> str:
+    """Takes a user prompt, routes it to preferred AI, and returns Python output."""
     
-    provider, api_key, custom_url = _get_provider_config(current_user, settings)
+    provider, api_key, custom_url, configured_model = _get_provider_config(current_user, settings)
+    active_model = model_override or configured_model
     
     if provider == "gemini" and not api_key:
         return "# Error: No Gemini API Key configured. Please check your Personal or Global AI settings."
@@ -103,15 +195,17 @@ def generate_script(prompt: str, current_user: models.User, settings: models.Adm
         
     try:
         if provider == "gemini":
-            selected_model_name = _resolve_gemini_model(api_key)
-            model = genai.GenerativeModel(selected_model_name)
+            target_model = _resolve_gemini_model(api_key, active_model)
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel(target_model)
             response = model.generate_content(full_prompt)
             return strip_code_blocks(response.text)
             
         elif provider == "openai":
+            target_model = active_model or "gpt-4o"
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
             payload = {
-                "model": "gpt-4o",
+                "model": target_model,
                 "messages": [
                     {"role": "system", "content": system_instruction.strip()},
                     {"role": "user", "content": prompt if mode == "generate" else full_prompt}
@@ -123,13 +217,14 @@ def generate_script(prompt: str, current_user: models.User, settings: models.Adm
             return strip_code_blocks(res.json()["choices"][0]["message"]["content"])
 
         elif provider == "anthropic":
+            target_model = active_model or "claude-3-5-sonnet-20241022"
             headers = {
                 "x-api-key": api_key,
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json"
             }
             payload = {
-                "model": "claude-3-5-sonnet-20241022",
+                "model": target_model,
                 "max_tokens": 4096,
                 "system": system_instruction.strip(),
                 "messages": [
@@ -147,10 +242,9 @@ def generate_script(prompt: str, current_user: models.User, settings: models.Adm
             headers = {"Content-Type": "application/json"}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
-            # Discover or default model
-            model_name = "qwen2.5-coder:7b"
+            target_model = active_model or "qwen2.5-coder:7b"
             payload = {
-                "model": model_name,
+                "model": target_model,
                 "messages": [
                     {"role": "system", "content": system_instruction.strip()},
                     {"role": "user", "content": prompt if mode == "generate" else full_prompt}
@@ -161,15 +255,17 @@ def generate_script(prompt: str, current_user: models.User, settings: models.Adm
             return strip_code_blocks(res.json()["choices"][0]["message"]["content"])
 
         elif provider == "groq":
+            target_model = active_model or "llama-3.3-70b-versatile"
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-            payload = {"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": full_prompt}], "temperature": 0.2}
+            payload = {"model": target_model, "messages": [{"role": "user", "content": full_prompt}], "temperature": 0.2}
             res = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=30)
             res.raise_for_status()
             return strip_code_blocks(res.json()["choices"][0]["message"]["content"])
             
         elif provider == "ollama":
             base_url = custom_url.rstrip("/") if custom_url else "http://127.0.0.1:11434"
-            payload = {"model": "qwen2.5-coder:3b", "prompt": full_prompt, "stream": False, "options": {"temperature": 0.2}}
+            target_model = active_model or "qwen2.5-coder:3b"
+            payload = {"model": target_model, "prompt": full_prompt, "stream": False, "options": {"temperature": 0.2}}
             res = requests.post(f"{base_url}/api/generate", json=payload, timeout=60)
             res.raise_for_status()
             return strip_code_blocks(res.json()["response"])

@@ -199,12 +199,34 @@ def delete_users(
     <script>document.getElementById("user-search-input").dispatchEvent(new Event("keyup"));</script>
     <article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Successfully deleted {count} user(s).</article>
     """
+@router.post("/google-places", response_class=HTMLResponse)
+def save_google_places_key(
+    google_places_key: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    """Saves the Google Places API key to the global Admin Settings."""
+    if not current_user.is_admin:
+        return "<article style='background-color: #721c24; color: white; padding: 1rem; border-radius: 4px;'>Unauthorized.</article>"
+
+    clean_key = google_places_key.strip()
+    settings = db.query(models.AdminSettings).first()
+    if not settings:
+        settings = models.AdminSettings()
+        db.add(settings)
+    
+    settings.google_places_api_key = clean_key if clean_key else None
+    db.commit()
+    
+    return "<article class='auto-dismiss-alert' style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>Google Places API Key saved successfully!</article>"
+
 @router.post("/ai", response_class=HTMLResponse)
 def update_global_ai(
     global_ai_enabled: bool = Form(False),
     global_ai_provider: str = Form("gemini"),
     global_gemini_api_key: str = Form(""),
     global_ai_custom_url: str = Form(""),
+    global_ai_model: str = Form(""),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
@@ -219,6 +241,7 @@ def update_global_ai(
     settings.global_ai_enabled = global_ai_enabled
     settings.global_ai_provider = global_ai_provider
     settings.global_ai_custom_url = global_ai_custom_url.strip() if global_ai_custom_url.strip() else None
+    settings.global_ai_model = global_ai_model.strip() if global_ai_model.strip() else None
 
     # Only overwrite the key if they actually submitted a new one, so they don't blank it out by accident
     if global_gemini_api_key and global_gemini_api_key.strip():
@@ -226,4 +249,4 @@ def update_global_ai(
         
     db.commit()
 
-    return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Global AI Settings updated successfully.</article>"
+    return "<article class='auto-dismiss-alert' style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;'>Global AI Settings updated successfully.</article>"

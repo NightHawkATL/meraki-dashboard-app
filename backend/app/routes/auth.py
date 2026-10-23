@@ -365,6 +365,7 @@ def update_user_ai(
     user_ai_provider: str = Form(""), # Blank means use Global Default
     user_ai_api_key: str = Form(""),
     user_ai_custom_url: str = Form(""),
+    user_ai_model: str = Form(""),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
@@ -373,9 +374,59 @@ def update_user_ai(
     if user_ai_api_key and user_ai_api_key.strip():
         current_user.user_ai_api_key = user_ai_api_key.strip()
     
-    # We allow blanking out the custom URL
+    # We allow blanking out the custom URL and model
     current_user.user_ai_custom_url = user_ai_custom_url.strip() if user_ai_custom_url.strip() else None
+    current_user.user_ai_model = user_ai_model.strip() if user_ai_model.strip() else None
         
     db.commit()
 
-    return "<article style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Personal AI Configuration saved successfully.</article>"
+    return "<article class='auto-dismiss-alert' style='background-color: #1e4620; color: white; padding: 1rem; margin-bottom: 1rem;'>Personal AI Configuration saved successfully.</article>"
+
+
+@router.get("/ai/models")
+@router.post("/ai/models")
+def get_ai_models(
+    request: Request,
+    provider: str = Form(None),
+    api_key: str = Form(None),
+    custom_url: str = Form(None),
+    selected_model: str = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    """Fetches real-time models list for the given provider and API key."""
+    from ..ai_helper import fetch_available_models
+    settings = db.query(models.AdminSettings).first()
+
+    if provider is None:
+        provider = request.query_params.get("provider")
+    if api_key is None:
+        api_key = request.query_params.get("api_key")
+    if custom_url is None:
+        custom_url = request.query_params.get("custom_url")
+    if selected_model is None:
+        selected_model = request.query_params.get("selected_model")
+
+    if not provider:
+        provider = current_user.user_ai_provider or (settings.global_ai_provider if settings else "gemini") or "gemini"
+        
+    if not api_key:
+        if current_user.user_ai_api_key:
+            api_key = current_user.user_ai_api_key
+        elif settings and settings.global_gemini_api_key:
+            api_key = settings.global_gemini_api_key
+
+    if not custom_url:
+        custom_url = current_user.user_ai_custom_url or (settings.global_ai_custom_url if settings else "")
+
+    models_list = fetch_available_models(provider, api_key or "", custom_url or "")
+
+    accept_header = request.headers.get("accept", "")
+    if "text/html" in accept_header or request.query_params.get("format") == "html":
+        options_html = '<option value="">Auto-Detect / Default</option>'
+        for m in models_list:
+            sel = 'selected' if (selected_model and selected_model == m["id"]) else ''
+            options_html += f'<option value="{m["id"]}" {sel}>{m["name"]}</option>'
+        return HTMLResponse(content=options_html)
+
+    return {"status": "success", "provider": provider, "models": models_list}
