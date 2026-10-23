@@ -22,6 +22,50 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
+def generate_compliant_password(settings=None) -> str:
+    """Generates a random password strictly complying with AdminSettings policy."""
+    import secrets
+    import string
+
+    min_length = getattr(settings, 'pwd_min_length', 12) if settings else 12
+    length = max(12, int(min_length or 12))
+
+    req_upper = getattr(settings, 'pwd_require_upper', True) if settings else True
+    req_lower = getattr(settings, 'pwd_require_lower', True) if settings else True
+    req_number = getattr(settings, 'pwd_require_number', True) if settings else True
+    req_special = getattr(settings, 'pwd_require_special', True) if settings else True
+
+    special_chars = "!@#$%^&*"
+    chars = string.ascii_letters + string.digits + special_chars
+
+    while True:
+        pwd_chars = []
+        if req_upper:
+            pwd_chars.append(secrets.choice(string.ascii_uppercase))
+        if req_lower:
+            pwd_chars.append(secrets.choice(string.ascii_lowercase))
+        if req_number:
+            pwd_chars.append(secrets.choice(string.digits))
+        if req_special:
+            pwd_chars.append(secrets.choice(special_chars))
+
+        remaining = length - len(pwd_chars)
+        for _ in range(max(0, remaining)):
+            pwd_chars.append(secrets.choice(chars))
+
+        secrets.SystemRandom().shuffle(pwd_chars)
+        pwd = ''.join(pwd_chars)
+
+        if req_upper and not any(c.isupper() for c in pwd):
+            continue
+        if req_lower and not any(c.islower() for c in pwd):
+            continue
+        if req_number and not any(c.isdigit() for c in pwd):
+            continue
+        if req_special and not any(c in special_chars for c in pwd):
+            continue
+        return pwd
+
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

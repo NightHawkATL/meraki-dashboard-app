@@ -84,15 +84,8 @@ def reset_user_password(
     if not user:
         return "<article style='background-color: #721c24; color: white; padding: 1rem; margin-bottom: 1rem;'>User not found.</article>"
 
-    import secrets
-    import string
-    
     settings = db.query(models.AdminSettings).first()
-    min_length = settings.pwd_min_length if settings else 12
-    
-    # Generate password matching requirements
-    chars = string.ascii_letters + string.digits + "!@#$%^&*"
-    new_password = ''.join(secrets.choice(chars) for _ in range(max(12, min_length)))
+    new_password = security.generate_compliant_password(settings)
     
     user.password_hash = security.get_password_hash(new_password)
     db.commit()

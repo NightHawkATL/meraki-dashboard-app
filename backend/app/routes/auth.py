@@ -148,18 +148,8 @@ def register_user(
             "message": "Your email domain is not authorized for self-signup."
         })
 
-    # Generate a compliant temporary password
-    alphabet = string.ascii_letters + string.digits + "!@#"
-    while True:
-        temp_pwd = ''.join(secrets.choice(alphabet) for _ in range(settings.pwd_min_length if settings else 12))
-        
-        # Verify it meets all criteria
-        if settings:
-            if settings.pwd_require_number and not any(c.isdigit() for c in temp_pwd): continue
-            if settings.pwd_require_upper and not any(c.isupper() for c in temp_pwd): continue
-            if settings.pwd_require_lower and not any(c.islower() for c in temp_pwd): continue
-            if settings.pwd_require_special and not any(c in "!@#" for c in temp_pwd): continue
-        break
+    # Generate a conformative temporary password based on global policies
+    temp_pwd = security.generate_compliant_password(settings)
 
     hashed_pw = security.get_password_hash(temp_pwd)
     new_user = models.User(
@@ -198,15 +188,7 @@ def forgot_password(
         })
         
     settings = db.query(models.AdminSettings).first()
-    alphabet = string.ascii_letters + string.digits + "!@#"
-    while True:
-        temp_pwd = ''.join(secrets.choice(alphabet) for _ in range(settings.pwd_min_length if settings else 12))
-        if settings:
-            if settings.pwd_require_number and not any(c.isdigit() for c in temp_pwd): continue
-            if settings.pwd_require_upper and not any(c.isupper() for c in temp_pwd): continue
-            if settings.pwd_require_lower and not any(c.islower() for c in temp_pwd): continue
-            if settings.pwd_require_special and not any(c in "!@#" for c in temp_pwd): continue
-        break
+    temp_pwd = security.generate_compliant_password(settings)
 
     db_user.password_hash = security.get_password_hash(temp_pwd)
     db.commit()
