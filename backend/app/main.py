@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Meraki Dashboard App")
+app = FastAPI(title="Parity Meraki App")
 
 app.add_middleware(
     CORSMiddleware,

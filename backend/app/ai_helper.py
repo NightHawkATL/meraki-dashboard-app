@@ -57,7 +57,24 @@ def generate_script(prompt: str, current_user: models.User, settings: models.Adm
     try:
         if provider == "gemini":
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            # Find an active Gemini model supporting generateContent
+            candidate_models = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-1.5-pro-latest", "gemini-1.5-pro", "gemini-2.5-flash", "gemini-pro"]
+            selected_model_name = None
+            try:
+                available_models = [m.name for m in genai.list_models() if "generateContent" in getattr(m, "supported_generation_methods", [])]
+                for candidate in candidate_models:
+                    for avail in available_models:
+                        if avail.endswith(candidate) or avail == candidate or avail == f"models/{candidate}":
+                            selected_model_name = avail
+                            break
+                    if selected_model_name:
+                        break
+                if not selected_model_name and available_models:
+                    selected_model_name = available_models[0]
+            except Exception:
+                selected_model_name = "gemini-1.5-flash-latest"
+
+            model = genai.GenerativeModel(selected_model_name or "gemini-1.5-flash-latest")
             response = model.generate_content(full_prompt)
             return strip_code_blocks(response.text)
             

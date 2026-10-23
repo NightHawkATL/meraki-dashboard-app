@@ -141,6 +141,45 @@ def register_user(
         "type": "success"
     })
 
+@router.post("/forgot-password")
+def forgot_password(
+    request: Request,
+    username: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Generates a temporary compliant password and emails it to the user."""
+    username = username.lower().strip()
+    db_user = db.query(models.User).filter(models.User.username == username).first()
+    
+    if not db_user:
+        return templates.TemplateResponse("components/alert.html", {
+            "request": request,
+            "message": f"If an account exists for {username}, a temporary password has been sent.",
+            "type": "success"
+        })
+        
+    settings = db.query(models.AdminSettings).first()
+    alphabet = string.ascii_letters + string.digits + "!@#"
+    while True:
+        temp_pwd = ''.join(secrets.choice(alphabet) for _ in range(settings.pwd_min_length if settings else 12))
+        if settings:
+            if settings.pwd_require_number and not any(c.isdigit() for c in temp_pwd): continue
+            if settings.pwd_require_upper and not any(c.isupper() for c in temp_pwd): continue
+            if settings.pwd_require_lower and not any(c.islower() for c in temp_pwd): continue
+            if settings.pwd_require_special and not any(c in "!@#" for c in temp_pwd): continue
+        break
+
+    db_user.password_hash = security.get_password_hash(temp_pwd)
+    db.commit()
+    
+    send_temporary_password_email(username, temp_pwd)
+    
+    return templates.TemplateResponse("components/alert.html", {
+        "request": request,
+        "message": f"Temporary password sent to {username}. Debug: {temp_pwd}",
+        "type": "success"
+    })
+
 @router.post("/login")
 
 def login(

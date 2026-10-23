@@ -35,8 +35,23 @@
                         <input type="password" name="password" required>
                     </label>
                     <button type="submit">Log In</button>
+                    <div style="margin-top: 10px; display: flex; justify-content: space-between; font-size: 0.9rem;">
+                        <a href="javascript:void(0);" onclick="document.getElementById('login-view').style.display='none'; document.getElementById('forgot-view').style.display='block'; document.getElementById('register-view').style.display='none';" style="color: #90caf9;">Forgot Password?</a>
+                        <a href="javascript:void(0);" onclick="document.getElementById('login-view').style.display='none'; document.getElementById('register-view').style.display='block'; document.getElementById('forgot-view').style.display='none';" style="color: #64b5f6;">Need an account? Register</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Forgot Password Form (Hidden initially) -->
+            <div id="forgot-view" style="display: none;">
+                <form hx-post="/api/auth/forgot-password" hx-target="#auth-alerts" hx-swap="innerHTML">
+                    <p style="font-size: 0.9rem; color: #b0bec5; margin-bottom: 12px;">Enter your email to receive a temporary replacement password.</p>
+                    <label>Email Address
+                        <input type="email" name="username" required>
+                    </label>
+                    <button type="submit" style="background-color: #0288d1; border-color: #0288d1;">Send Temporary Password</button>
                     <div style="margin-top: 10px; text-align: center;">
-                        <a href="javascript:void(0);" onclick="document.getElementById('login-view').style.display='none'; document.getElementById('register-view').style.display='block';" style="color: #64b5f6; font-size: 0.9rem;">Need an account? Register here</a>
+                        <a href="javascript:void(0);" onclick="document.getElementById('forgot-view').style.display='none'; document.getElementById('login-view').style.display='block';" style="color: #64b5f6; font-size: 0.9rem;">Back to Login</a>
                     </div>
                 </form>
             </div>
